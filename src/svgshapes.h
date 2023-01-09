@@ -1,13 +1,13 @@
 #pragma once
 
 
-#include "graphic.hpp"
-#include "Graphics.h"
+//#include "graphic.hpp"
+//#include "Graphics.h"
 #include "xmlscan.h"
 #include "svgtypes.h"
 #include "cssscanner.h"
 #include "base64.h"
-#include "stb_image.h"
+
 
 #include <string>
 #include <array>
@@ -30,7 +30,7 @@
 // BUGBUG- Need nullable types for cascading attributes
 
 namespace svg {
-	using namespace ndt;
+	using namespace svg2b2d;
 	
 
 	// stroke-dasharray
@@ -166,28 +166,28 @@ namespace svg {
 		}
 		
 		// Contains styling attributes
-		void applyAttributes(IGraphics& ctx)
+		void applyAttributes(BLContext& ctx)
 		{
 			for (auto& prop : fVisualProperties) {
 				prop.second->draw(ctx);
 			}
 		}
 		
-		virtual void drawSelf(IGraphics& ctx)
+		virtual void drawSelf(BLContext& ctx)
 		{
 			;
 
 		}
 		
-		void draw(IGraphics& ctx) override
+		void draw(BLContext& ctx) override
 		{
-			ctx.push();
+			ctx.save();
 			
 			applyAttributes(ctx);
 
 			drawSelf(ctx);
 
-			ctx.pop();
+			ctx.restore();
 		}
 	};
 	
@@ -246,7 +246,7 @@ namespace svg {
 
 		}
 
-		void drawSelf(IGraphics& ctx) override
+		void drawSelf(BLContext& ctx) override
 		{
 			if (fWrappedNode == nullptr)
 				return;
@@ -309,7 +309,7 @@ namespace svg {
 		SVGPathBasedShape(IMapSVGNodes* iMap) :SVGShape(iMap) {}
 		
 		
-		void drawSelf(IGraphics &ctx) override
+		void drawSelf(BLContext &ctx) override
 		{
 			ctx.path(fPath);
 		}
@@ -618,7 +618,7 @@ namespace svg {
 			return fVar;
 		}
 		
-		void drawSelf(IGraphics& ctx)
+		void drawSelf(BLContext& ctx)
 		{
 			if (fImage.empty())
 				return;
@@ -717,7 +717,7 @@ namespace svg {
 		}
 		
 		
-		void drawSelf(IGraphics& ctx)
+		void drawSelf(BLContext& ctx)
 		{
 			for (auto& node : fNodes) {
 				node->draw(ctx);
@@ -761,7 +761,7 @@ namespace svg {
 			addNode(node);
 		}
 		
-		virtual void loadFromIterator(ndt::XmlElementIterator& iter)
+		virtual void loadFromIterator(svg2b2d::XmlElementIterator& iter)
 		{
 			// First, loadSelfFromXml because we're sitting on our opening element
 			// and we need to gather our own attributes
@@ -775,7 +775,7 @@ namespace svg {
 				// move iterator forward to get to next item
 				iter++;
 
-				const ndt::XmlElement& elem = *iter;
+				const svg2b2d::XmlElement& elem = *iter;
 
 				// BUGBUG - debug
 				//ndt_debug::printXmlElement(elem);
@@ -851,7 +851,7 @@ namespace svg {
 		SVGTextNode() :SVGCompoundNode() {}
 		SVGTextNode(IMapSVGNodes* root) :SVGCompoundNode(root) {}
 
-		void drawSelf(IGraphics& ctx) override
+		void drawSelf(BLContext& ctx) override
 		{
 			ctx.textFont("Calibri");	// BUGBUG - hardcoded, should go away when property supported
 			ctx.text(fText.c_str(), x, y+dy);
@@ -944,7 +944,7 @@ namespace svg {
 			return fVar;
 		}
 		
-		void drawSelf(IGraphics& ctx) override
+		void drawSelf(BLContext& ctx) override
 		{
 			// This should not be called
 			// a pattern is used as a fill for other visuals
@@ -1338,7 +1338,7 @@ namespace svg {
 		
 		void loadCompoundNode(XmlElementIterator& iter) override
 		{
-			const ndt::XmlElement& elem = *iter;
+			const svg2b2d::XmlElement& elem = *iter;
 			
 
 			
@@ -1450,7 +1450,7 @@ namespace svg {
 			return node;
 		}
 
-		void draw(IGraphics& ctx) override
+		void draw(BLContext& ctx) override
 		{
 			ctx.push();
 

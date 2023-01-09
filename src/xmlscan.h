@@ -14,8 +14,8 @@
 // using a 'pull model'.
 // 
 // One key aspect of the design is that it operates on a span of memory.  It does
-// no deal with files, or streams, or anything high level like that, just a chunk.
-// It does not alter the chunk, just reads bytes from it, and returns chunks in 
+// no deal with files, or streams, or anything high level like that, just a ByteSpan.
+// It does not alter the span, just reads bytes from it, and returns spans in 
 // responses.
 //
 // The fundamental unit is the XmlElement, which encapsulates a single XML element
@@ -34,28 +34,24 @@
 // https://www.w3.org/TR/REC-xml/
 //
 
-namespace ndt {
-
-
-    //static ndt::charset wspChars(" \r\n\t\f\v");
-
+namespace svg2b2d {
 
     enum XML_ELEMENT_TYPE {
         XML_ELEMENT_TYPE_INVALID = 0
-		, XML_ELEMENT_TYPE_XMLDECL
-        , XML_ELEMENT_TYPE_CONTENT
-        , XML_ELEMENT_TYPE_SELF_CLOSING
-        , XML_ELEMENT_TYPE_START_TAG
-        , XML_ELEMENT_TYPE_END_TAG
-        , XML_ELEMENT_TYPE_COMMENT
-        , XML_ELEMENT_TYPE_PROCESSING_INSTRUCTION
-        , XML_ELEMENT_TYPE_CDATA
-        , XML_ELEMENT_TYPE_DOCTYPE
+		, XML_ELEMENT_TYPE_XMLDECL                  // An XML declaration, like <?xml version="1.0" encoding="UTF-8"?>
+        , XML_ELEMENT_TYPE_CONTENT                  // Content, like <foo>bar</foo>, the 'bar' is content
+        , XML_ELEMENT_TYPE_SELF_CLOSING             // A self-closing tag, like <foo/>
+        , XML_ELEMENT_TYPE_START_TAG                // A start tag, like <foo>
+        , XML_ELEMENT_TYPE_END_TAG                  // An end tag, like </foo>
+        , XML_ELEMENT_TYPE_COMMENT                  // A comment, like <!-- foo -->
+        , XML_ELEMENT_TYPE_PROCESSING_INSTRUCTION   // A processing instruction, like <?foo bar?>
+        , XML_ELEMENT_TYPE_CDATA                    // A CDATA section, like <![CDATA[ foo ]]>
+        , XML_ELEMENT_TYPE_DOCTYPE                  // A DOCTYPE section, like <!DOCTYPE foo>
     };
 
 	struct XmlName {
-        ndt::ByteSpan fNamespace{};
-        ndt::ByteSpan fName{};
+        ByteSpan fNamespace{};
+        ByteSpan fName{};
 
         XmlName() = default;
         
@@ -73,6 +69,14 @@ namespace ndt {
             return *this;
         }
         
+        XmlName & (const ByteSpan &inChunk)
+        {
+            reset(inChunk);
+            return *this;
+        }
+        
+        // Allows setting the name after it's been created
+        // BUGBUG - maybe an operator= would be better?
         XmlName& reset(const ByteSpan& inChunk)
         {
             fName = inChunk;
@@ -339,13 +343,13 @@ namespace ndt {
         
         // What state the iterator is in
         int fState{ XML_ITERATOR_STATE_CONTENT };
-        ndt::ByteSpan fSource{};
-        ndt::ByteSpan mark{};
+        svg2b2d::ByteSpan fSource{};
+        svg2b2d::ByteSpan mark{};
 
         XmlElement fCurrentElement{};
         
     public:
-        XmlElementIterator(const ndt::ByteSpan& inChunk)
+        XmlElementIterator(const svg2b2d::ByteSpan& inChunk)
         {
             fSource = inChunk;
             mark = inChunk;
@@ -365,7 +369,7 @@ namespace ndt {
         XmlElementIterator& operator++(int) { next(); return *this; }
         
         // Reset the iterator to a known state with data
-        void reset(const ndt::ByteSpan& inChunk, int st)
+        void reset(const svg2b2d::ByteSpan& inChunk, int st)
         {
             fSource = inChunk;
             mark = inChunk;
@@ -436,7 +440,7 @@ namespace ndt {
                         if (fSource != mark)
                         {
                             // Encapsulate the content in a chunk
-                            ndt::ByteSpan content = { mark.fStart, fSource.fStart };
+                            svg2b2d::ByteSpan content = { mark.fStart, fSource.fStart };
 
                             // collapse whitespace
 							// if the content is all whitespace
@@ -531,44 +535,44 @@ namespace ndt {
 
 
 namespace ndt_debug {
-	using namespace ndt;
+	using namespace svg2b2d;
     
     std::map<int, std::string> elemTypeNames = {
-     {ndt::XML_ELEMENT_TYPE_INVALID, "INVALID"}
-    ,{ndt::XML_ELEMENT_TYPE_CONTENT, "CONTENT"}
-    ,{ndt::XML_ELEMENT_TYPE_SELF_CLOSING, "SELF_CLOSING"}
-    ,{ndt::XML_ELEMENT_TYPE_START_TAG, "START_TAG"}
-    ,{ndt::XML_ELEMENT_TYPE_END_TAG, "END_TAG"}
-    ,{ndt::XML_ELEMENT_TYPE_COMMENT, "COMMENT"}
-    ,{ndt::XML_ELEMENT_TYPE_PROCESSING_INSTRUCTION, "PROCESSING_INSTRUCTION"}
-    ,{ndt::XML_ELEMENT_TYPE_CDATA, "CDATA"}
-	,{ndt::XML_ELEMENT_TYPE_XMLDECL, "XMLDECL"}
-	,{ndt::XML_ELEMENT_TYPE_DOCTYPE, "DOCTYPE"}
+     {svg2b2d::XML_ELEMENT_TYPE_INVALID, "INVALID"}
+    ,{svg2b2d::XML_ELEMENT_TYPE_CONTENT, "CONTENT"}
+    ,{svg2b2d::XML_ELEMENT_TYPE_SELF_CLOSING, "SELF_CLOSING"}
+    ,{svg2b2d::XML_ELEMENT_TYPE_START_TAG, "START_TAG"}
+    ,{svg2b2d::XML_ELEMENT_TYPE_END_TAG, "END_TAG"}
+    ,{svg2b2d::XML_ELEMENT_TYPE_COMMENT, "COMMENT"}
+    ,{svg2b2d::XML_ELEMENT_TYPE_PROCESSING_INSTRUCTION, "PROCESSING_INSTRUCTION"}
+    ,{svg2b2d::XML_ELEMENT_TYPE_CDATA, "CDATA"}
+	,{svg2b2d::XML_ELEMENT_TYPE_XMLDECL, "XMLDECL"}
+	,{svg2b2d::XML_ELEMENT_TYPE_DOCTYPE, "DOCTYPE"}
 	};
 
-    void printXmlElement(const ndt::XmlElement& elem)
+    void printXmlElement(const svg2b2d::XmlElement& elem)
     {
         if (elem.kind() == XML_ELEMENT_TYPE_INVALID)
             return;
 
         switch (elem.kind())
         {
-        case ndt::XML_ELEMENT_TYPE_CONTENT:
-        case ndt::XML_ELEMENT_TYPE_COMMENT:
-        case ndt::XML_ELEMENT_TYPE_PROCESSING_INSTRUCTION:
+        case svg2b2d::XML_ELEMENT_TYPE_CONTENT:
+        case svg2b2d::XML_ELEMENT_TYPE_COMMENT:
+        case svg2b2d::XML_ELEMENT_TYPE_PROCESSING_INSTRUCTION:
             printf("%s: \n", elemTypeNames[elem.kind()].c_str());
             printChunk(elem.data());
             break;
 
-        case ndt::XML_ELEMENT_TYPE_START_TAG:
+        case svg2b2d::XML_ELEMENT_TYPE_START_TAG:
             printf("START_TAG: [%s]\n", elem.name().c_str());
             break;
 
-        case ndt::XML_ELEMENT_TYPE_SELF_CLOSING:
+        case svg2b2d::XML_ELEMENT_TYPE_SELF_CLOSING:
             printf("SELF_CLOSING: [%s]\n", elem.name().c_str());
             break;
 
-        case ndt::XML_ELEMENT_TYPE_END_TAG:
+        case svg2b2d::XML_ELEMENT_TYPE_END_TAG:
             printf("END_TAG: [%s]\n", elem.name().c_str());
             break;
 

@@ -15,20 +15,6 @@
 #include <cstddef>		// nullptr_t, ptrdiff_t, size_t
 
 
-#ifdef WHISPER_SHARED
-#    ifdef _WIN32
-#        ifdef APP_BUILD
-#            define APP_API __declspec(dllexport)
-#        else
-#            define APP_API __declspec(dllimport)
-#        endif
-#    else
-#        define APP_API __attribute__ ((visibility ("default")))
-#    endif
-#else
-#    define APP_API
-#endif
-
 
 #if defined(_MSC_VER)
 #define NDT_IS_MSVC
@@ -40,7 +26,7 @@
 #define INLINE static inline
 #endif
 
-namespace ndt 
+namespace svg2b2d 
 {
     // Determine at runtime if the CPU is little-endian (intel standard)
     static INLINE bool isLE() noexcept {int i = 1; return (int)*((unsigned char*)&i) == 1;}

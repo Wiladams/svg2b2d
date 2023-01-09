@@ -4,14 +4,14 @@
 // https://jenkov.com/tutorials/svg/svg-and-css.html
 //
 
-#include "chunkutil.h"
+#include "bspanutil.h"
 
 #include <string>
 #include <vector>
 #include <map>
 #include <tuple>
 
-namespace ndt
+namespace svg2b2d
 {
 	
 	// CSS Syntax
@@ -21,7 +21,7 @@ namespace ndt
 	struct CSSSelector
 	{
 		std::string fName{};
-		std::map<std::string, ndt::DataChunk> fProperties{};
+		std::map<std::string, svg2b2d::DataChunk> fProperties{};
 
 		CSSSelector() = default;
 		
@@ -32,7 +32,7 @@ namespace ndt
 		}
 		
 		const std::string& name() const { return fName; }
-		const std::map<std::string, ndt::DataChunk>& properties() const { return fProperties; }
+		const std::map<std::string, svg2b2d::DataChunk>& properties() const { return fProperties; }
 		
 		
 		explicit operator bool() const { return !fName.empty() && fProperties.size() > 0; }
@@ -45,8 +45,8 @@ namespace ndt
 			// then split each property-value pair into two chunks
 			while (s)
 			{
-				DataChunk pcombo = chunk_token(s, ndt::charset(";"));
-				DataChunk pname = chunk_token(pcombo, ndt::charset(":"));
+				DataChunk pcombo = chunk_token(s, svg2b2d::charset(";"));
+				DataChunk pname = chunk_token(pcombo, svg2b2d::charset(":"));
 				
 				// Add the property to the map
 				if (pcombo && pname)
@@ -92,8 +92,8 @@ namespace ndt
 			if (fChunk)
 			{
 
-				DataChunk nextValue = chunk_token(fChunk, ndt::charset(";"));
-				fCurrentName = chunk_trim(chunk_token(nextValue, ndt::charset(":")), wspChars);
+				DataChunk nextValue = chunk_token(fChunk, svg2b2d::charset(";"));
+				fCurrentName = chunk_trim(chunk_token(nextValue, svg2b2d::charset(":")), wspChars);
 				fCurrentValue = chunk_trim(nextValue, wspChars);
 
 				return (bool)fCurrentName && (bool)fCurrentValue;
@@ -142,7 +142,7 @@ namespace ndt
 			// Look for the next selector, which should be a string
 			// followed by a '{', with optional whitespace in between
 			// terminated with a '}'
-			DataChunk selectorChunk = chunk_token(fSource, ndt::charset("{"));
+			DataChunk selectorChunk = chunk_token(fSource, svg2b2d::charset("{"));
 			selectorChunk = chunk_trim(selectorChunk, wspChars);
 			
 			if (selectorChunk)
@@ -151,7 +151,7 @@ namespace ndt
 				// look for the closing '}', and then trim the whitespace
 				std::string selectorName(selectorChunk.fStart, selectorChunk.fEnd);
 				
-				DataChunk content = chunk_token(fSource, ndt::charset("}"));
+				DataChunk content = chunk_token(fSource, svg2b2d::charset("}"));
 				if (content)
 				{
 					fCurrentItem = CSSSelector(selectorName, content);

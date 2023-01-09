@@ -30,10 +30,10 @@
 
 */
 
-#include "chunkutil.h"
+#include "bspanutil.h"
 #include <cstddef>
 
-namespace base64
+namespace svg2b2d
 {
         /** @defgroup base64 Base64 Converter.
           * @{ */
@@ -50,7 +50,7 @@ namespace base64
           * @param src Source base64 string.
           * @return If success a pointer to the next byte in memory block.
           *         Null if string has a bad format.  */
-        static ndt::DataChunk b64tobin(ndt::DataChunk& outChunk, ndt::DataChunk& inChunk);
+        static svg2b2d::DataChunk b64tobin(svg2b2d::DataChunk& outChunk, svg2b2d::DataChunk& inChunk);
 
         /** Convert a base64 string to binary format.
           * @param p Source base64 string and destination memory block.
@@ -96,7 +96,7 @@ namespace base64
     //
     // Convert a base64 chunk to binary format.
     //
-    static ndt::DataChunk b64tobin(ndt::DataChunk& inChunk, ndt::DataChunk &outChunk)
+    static svg2b2d::DataChunk b64tobin(svg2b2d::DataChunk& inChunk, svg2b2d::DataChunk &outChunk)
     {
 		char const* src = (const char *)inChunk.fStart;
         uint8_t const* s = (uint8_t *)src;

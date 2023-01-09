@@ -1,6 +1,6 @@
 #pragma once
 
-#include "chunkutil.h"
+#include "bspanutil.h"
 #include "shaper.h"
 #include "maths.hpp"
 #include "coloring.h"
@@ -12,12 +12,11 @@
 // https://www.w3.org/TR/css3-values/#numbers
 //
 
-namespace svg {
-    using namespace ndt;
+namespace svg2b2d {
     using namespace maths;
 }
 
-namespace svg {
+namespace svg2b2d {
     // SVG Element Attributes are of fixed types
 // The SVGAttributeKind enum defines the types
 // https://www.w3.org/TR/SVG2/attindex.html#PresentationAttributes
@@ -100,7 +99,7 @@ namespace svg {
     };
 }
 
-namespace svg {
+namespace svg2b2d {
     // A map between a name and a presentation attribute kind
     // Functions can use this mapping to determine how to parse the data
     // https://www.w3.org/TR/SVG2/attindex.html#PresentationAttributes
@@ -175,7 +174,7 @@ namespace svg {
     };
 }
 
-namespace svg {
+namespace svg2b2d {
     struct IMapSVGNodes;
     
     struct SVGObject : public IDrawable
@@ -229,7 +228,7 @@ namespace svg {
             ;
         }
 
-        virtual void loadFromXmlElement(const ndt::XmlElement& elem)
+        virtual void loadFromXmlElement(const svg2b2d::XmlElement& elem)
         {
             // load the common attributes
             setName(elem.name());
@@ -325,7 +324,7 @@ namespace svg {
     };
 }
 
-namespace svg {
+namespace svg2b2d {
     // simple type parsing
     static INLINE int64_t toInteger(const DataChunk& inChunk);
     static INLINE float toNumber(const DataChunk& inChunk);
@@ -338,7 +337,7 @@ namespace svg {
 }
 
 /// Some utility routines
-namespace svg {
+namespace svg2b2d {
 
     // return a number next in a list of numbers
     static INLINE double nextNumber(DataChunk& inChunk, const charset& delims)
@@ -381,7 +380,7 @@ namespace svg {
 // SVGDimension
 // used for length, time, frequency, resolution, location
 //==============================================================================
-namespace svg
+namespace svg2b2d
 {
     // Turn a units indicator into an enum
     static SVGDimensionUnits parseDimensionUnits(const DataChunk& units)
@@ -524,7 +523,7 @@ namespace svg
 }
 
 
-namespace svg {
+namespace svg2b2d {
     struct SVGOpacity : public SVGVisualProperty
     {
         float fValue{ 1.0 };
@@ -564,7 +563,7 @@ namespace svg {
 }
 
 
-namespace svg {
+namespace svg2b2d {
     struct SVGFontSize : public SVGVisualProperty
     {
         double fValue{ 12.0 };
@@ -722,7 +721,7 @@ enum class ALIGNMENT : unsigned
 }
 
 
-namespace svg {
+namespace svg2b2d {
     void parseStyleAttribute(const DataChunk & inChunk, XmlElement &styleElement)
     {
         // Turn the style element into attributes of an XmlElement, 
@@ -753,7 +752,7 @@ namespace svg {
 //======================================================
 // Definition of SVG Paint
 //======================================================
-namespace svg {
+namespace svg2b2d {
     // Representation of color according to CSS specification
 	// https://www.w3.org/TR/css-color-4/#typedef-color
     // Over time, this structure could represent the full specification
@@ -770,7 +769,7 @@ namespace svg {
 
 }
 
-namespace svg {
+namespace svg2b2d {
 
     static vec4b parseColorHex(const DataChunk& chunk)
     {
@@ -1092,7 +1091,7 @@ namespace svg {
 //    NON_ZERO = 0,
 //    EVEN_ODD = 1,
 //};
-namespace svg {
+namespace svg2b2d {
     struct SVGFillRule : public SVGVisualProperty
     {
 		unsigned int fValue{ SVG_FILLRULE_NONZERO };
@@ -1150,7 +1149,7 @@ namespace svg {
     };
 }
 
-namespace svg {
+namespace svg2b2d {
     struct SVGStrokeWidth : public SVGVisualProperty
     {
 		double fWidth{ 1.0};
@@ -1364,7 +1363,7 @@ namespace svg {
     };
     
 }
-namespace svg {
+namespace svg2b2d {
     
     //======================================================
     // SVGViewbox
@@ -1435,7 +1434,7 @@ namespace svg {
 
 }
 
-namespace svg
+namespace svg2b2d
 {
 
 
@@ -1463,7 +1462,7 @@ namespace svg
 // Transformation matrix
 //================================================
 
-namespace svg
+namespace svg2b2d
 {
 
     //

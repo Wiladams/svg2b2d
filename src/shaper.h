@@ -1,9 +1,8 @@
 #pragma once
 
-
-#include "chunkutil.h"
-#include "textscan.h"
 #include "blend2d.h"
+
+#include "bspanutil.h"
 
 #include <cstdint>
 #include <vector>
@@ -16,7 +15,7 @@
 // Shape        - Geometry + drawing attributes
 //
 
-namespace ndt
+namespace svg2b2d
 {
     enum SVGlineJoin {
         SVG_JOIN_MITER_CLIP = 0,
@@ -135,7 +134,7 @@ namespace ndt
 
     static ByteSpan scanNumber(const ByteSpan& inChunk, ByteSpan& numchunk)
     {
-        static ndt::charset digitChars("0123456789");                   // only digits
+        static svg2b2d::charset digitChars("0123456789");                   // only digits
         
         ByteSpan s = inChunk;
         numchunk = inChunk;
@@ -197,8 +196,8 @@ namespace ndt
     //
 	static void collectNumbers(const ByteSpan& chunk, std::vector<float>& numbers)
 	{
-        static ndt::charset whitespaceChars(",;\t\n\f\r ");          // whitespace found in paths
-        static ndt::charset numberChars("0123456789.+-eE");         // digits, symbols, and letters found in numbers
+        static svg2b2d::charset whitespaceChars(",;\t\n\f\r ");          // whitespace found in paths
+        static svg2b2d::charset numberChars("0123456789.+-eE");         // digits, symbols, and letters found in numbers
 
         
         ByteSpan s = chunk;
@@ -244,11 +243,11 @@ namespace ndt
     
     static void tokenizePath(const ByteSpan &chunk, std::vector<PathSegment>& commands)
     {
-        static ndt::charset whitespaceChars(",\t\n\f\r ");          // whitespace found in paths
-        static ndt::charset commandChars("mMlLhHvVcCqQsStTaAzZ");   // set of characters used for commands
-        static ndt::charset numberChars("0123456789.+-eE");         // digits, symbols, and letters found in numbers
-		static ndt::charset leadingChars("0123456789.+-");          // digits, symbols, and letters found in numbers
-        static ndt::charset digitChars("0123456789");                   // only digits
+        static svg2b2d::charset whitespaceChars(",\t\n\f\r ");          // whitespace found in paths
+        static svg2b2d::charset commandChars("mMlLhHvVcCqQsStTaAzZ");   // set of characters used for commands
+        static svg2b2d::charset numberChars("0123456789.+-eE");         // digits, symbols, and letters found in numbers
+		static svg2b2d::charset leadingChars("0123456789.+-");          // digits, symbols, and letters found in numbers
+        static svg2b2d::charset digitChars("0123456789");                   // only digits
         
         // Use a ByteSpan as a cursor on the input
         ByteSpan s = chunk;
@@ -266,8 +265,8 @@ namespace ndt
                 switch (*s) {
                 default:
                     //printf("CMD: %c\n", *s);
-                    ndt::PathSegment cmd{};
-                    cmd.fCommand = ndt::SegmentKind(*s);
+                    svg2b2d::PathSegment cmd{};
+                    cmd.fCommand = svg2b2d::SegmentKind(*s);
                     commands.push_back(cmd);
                     s++;
                 }
@@ -301,7 +300,7 @@ namespace ndt
 
 }
 
-namespace ndt
+namespace svg2b2d
 {
     //
     // PathBuilder
@@ -833,58 +832,58 @@ namespace ndt
         // Turn a set of commands and numbers
         // into a blPath
         //
-        void parseCommands(const std::vector<ndt::PathSegment>& segments)
+        void parseCommands(const std::vector<svg2b2d::PathSegment>& segments)
         {
             for (auto& cmd : segments)
             {
                 switch (cmd.fCommand)
                 {
-                case ndt::SegmentKind::MoveTo:
+                case svg2b2d::SegmentKind::MoveTo:
                     moveTo(cmd);
                     break;
-                case ndt::SegmentKind::MoveBy:
+                case svg2b2d::SegmentKind::MoveBy:
                     moveBy(cmd);
                     break;
 
-                case ndt::SegmentKind::LineTo:
+                case svg2b2d::SegmentKind::LineTo:
                     lineTo(cmd);
                     break;
-                case ndt::SegmentKind::LineBy:
+                case svg2b2d::SegmentKind::LineBy:
                     lineBy(cmd);
                     break;
 
-                case ndt::SegmentKind::HLineTo:
+                case svg2b2d::SegmentKind::HLineTo:
                     hLineTo(cmd);
                     break;
-                case ndt::SegmentKind::HLineBy:
+                case svg2b2d::SegmentKind::HLineBy:
                     hLineBy(cmd);
                     break;
 
-                case ndt::SegmentKind::VLineTo:
+                case svg2b2d::SegmentKind::VLineTo:
                     vLineTo(cmd);
                     break;
-                case ndt::SegmentKind::VLineBy:
+                case svg2b2d::SegmentKind::VLineBy:
                     vLineBy(cmd);
                     break;
 
-                case ndt::SegmentKind::CubicTo:
+                case svg2b2d::SegmentKind::CubicTo:
                     cubicTo(cmd);
                     break;
-                case ndt::SegmentKind::CubicBy:
+                case svg2b2d::SegmentKind::CubicBy:
                     cubicBy(cmd);
                     break;
 
-                case ndt::SegmentKind::SCubicTo:
+                case svg2b2d::SegmentKind::SCubicTo:
                     smoothCubicTo(cmd);
                     break;
-                case ndt::SegmentKind::SCubicBy:
+                case svg2b2d::SegmentKind::SCubicBy:
                     smoothCubicBy(cmd);
                     break;
                     
-                case ndt::SegmentKind::QuadTo:
+                case svg2b2d::SegmentKind::QuadTo:
                     quadTo(cmd);
                     break;
-                case ndt::SegmentKind::QuadBy:
+                case svg2b2d::SegmentKind::QuadBy:
 					quadBy(cmd);
                     break;
 
@@ -896,16 +895,16 @@ namespace ndt
                     break;
                     
 
-                case ndt::SegmentKind::ArcTo:
+                case svg2b2d::SegmentKind::ArcTo:
                     arcTo(cmd);
                     break;
-                case ndt::SegmentKind::ArcBy:
+                case svg2b2d::SegmentKind::ArcBy:
                     arcBy(cmd);
                     break;
 
 
-                case ndt::SegmentKind::CloseTo:
-                case ndt::SegmentKind::CloseBy:
+                case svg2b2d::SegmentKind::CloseTo:
+                case svg2b2d::SegmentKind::CloseBy:
                     close(cmd);
                     break;
 
@@ -926,7 +925,7 @@ namespace ndt
 
     };
 
-    static bool blPathFromSegments(std::vector<ndt::PathSegment>& segments, BLPath& apath)
+    static bool blPathFromSegments(std::vector<svg2b2d::PathSegment>& segments, BLPath& apath)
     {
         PathBuilder builder{};
 
@@ -938,9 +937,9 @@ namespace ndt
 
     static bool blPathFromCommands(ByteSpan& chunk, BLPath& apath)
     {
-        std::vector<ndt::PathSegment> segments{};
+        std::vector<svg2b2d::PathSegment> segments{};
 
-        ndt::tokenizePath(chunk, segments);
+        svg2b2d::tokenizePath(chunk, segments);
 
         return blPathFromSegments(segments, apath);
     }

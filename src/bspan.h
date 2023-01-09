@@ -8,7 +8,7 @@
 #include <cstring>
 #include <iterator>	// for std::data(), std::size()
 
-namespace ndt
+namespace svg2b2d
 {
 #ifdef __cplusplus
 	extern "C" {
@@ -109,7 +109,7 @@ namespace ndt
 	}
 
 	
-namespace ndt
+namespace svg2b2d
 {
 
 	
@@ -200,7 +200,7 @@ namespace ndt
 #endif
 }
 
-namespace ndt
+namespace svg2b2d
 {
 #ifdef __cplusplus
 	

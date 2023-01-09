@@ -10,7 +10,7 @@
 #include <bitset>
 
 
-namespace ndt {
+namespace svg2b2d {
 	// Represent a set of characters as a bitset
 	//
 	// Typical usage:
@@ -35,7 +35,23 @@ namespace ndt {
 	struct charset {
 		std::bitset<256> bits;
 
-		charset(const char achar)
+#ifdef __cplusplus
+	extern "C" {
+#endif
+	static INLINE charset charset_create_from_cstr(const char achar);
+	static INLINE charset charset_create_from_char(const char* chars);
+	static INLINE bool charset_contains(const charset& a, const uint8_t idx);
+	static INLINE void charset_add_char(charset& a, const char b);
+	static INLINE void charset_add_cstr(charset& a, const char* b);
+
+#ifdef __cplusplus
+	}
+#endif
+
+#ifdef __cplusplus
+	extern "C" {
+#endif
+		explicit charset(const char achar)
 		{
 			addChar(achar);
 		}
@@ -43,7 +59,6 @@ namespace ndt {
 		charset(const char* chars)
 		{
 			addChars(chars);
-
 		}
 
 		charset& addChar(const char achar)
@@ -63,54 +78,53 @@ namespace ndt {
 		
 		charset& operator+=(const char achar)
 		{
-			bits.set(achar);
-			return *this;
+			return addChar(achar);
 		}
 		
 		charset& operator+=(const char* chars)
 		{
-			addChars(chars);
-			return *this;
+			return addChars(chars);
 		}
 		
 		charset operator+(const char achar) const
 		{
 			charset result(*this);
-			result += achar;
-			return result;
+			return result.addChar(achar);
 		}
 		
 		charset operator+(const char* chars) const
 		{
 			charset result(*this);
-			result += chars;
-			return result;
+			return result.addChars(chars);
 		}
 		
 		// This one makes us look like an array
-		inline bool operator [](const size_t idx) const
+		bool operator [](const size_t idx) const
 		{
 			return bits[idx];
 		}
 
 		// This way makes us look like a function
-		inline bool operator ()(const size_t idx) const
+		bool operator ()(const size_t idx) const
 		{
 			return bits[idx];
 		}
 
-		inline bool contains(const uint8_t idx) const
+		bool contains(const uint8_t idx) const
 		{
 			return bits[idx];
 		}
+#ifdef __cplusplus
+	}
+#endif
 	};
 
 
 }
 
-namespace ndt
+namespace svg2b2d
 {
-	static ndt::charset wspChars(" \r\n\t\f\v");
+	static charset wspChars(" \r\n\t\f\v");		// a set of typical whitespace chars
 	
 #ifdef __cplusplus
 	extern "C" {
@@ -136,19 +150,15 @@ namespace ndt
 
 		// Number Conversions
 		static INLINE double chunk_to_double(ByteSpan& inChunk) noexcept;
-
-
 		
 #ifdef __cplusplus
 	}
-
-
 #endif
 }
 
 
 
-namespace ndt 
+namespace svg2b2d 
 {
 #ifdef __cplusplus
 	extern "C" {
@@ -422,7 +432,7 @@ namespace ndt
 }
 
 // a ciyoke if utility routines to help with debugging
-namespace ndt {
+namespace svg2b2d {
 	void writeChunk(const ByteSpan& chunk)
 	{
 		ByteSpan s = chunk;

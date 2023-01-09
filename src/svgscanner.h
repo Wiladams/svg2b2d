@@ -5,12 +5,11 @@
 
 #include "blend2d.h"
 
-#include "maths.hpp"
+#include "maths.h"
 #include "shaper.h"
 #include "geometry.h"
 
-#include "chunkutil.h"
-#include "mmap.hpp"
+#include "bspanutil.h"
 #include "xmlscan.h"
 #include "svgshapes.h"
 
@@ -27,10 +26,10 @@
 
 namespace svg
 {
-    using namespace ndt;
+    using namespace svg2b2d;
 	using namespace ndt_debug;
     using std::string;
-    using ndt::DataChunk;
+    using svg2b2d::ByteSpan;
 
 
     static charset digitChars("0123456789");
@@ -60,96 +59,4 @@ namespace svg
 
 
 
-namespace svg {
-    struct SVGDocument : public IDrawable
-    {
-        std::shared_ptr<mmap> fFileMap{};
-        
-		// All the drawable nodes within this document
-        std::vector<std::shared_ptr<IDrawable>> fShapes{};
-        maths::bbox2f fExtent;
-        
-        SVGDocument(std::string filename)
-		{
-            fFileMap = ndt::mmap::create_shared(filename);
-            if (fFileMap == nullptr)
-                return ;
-        }
-        
-        void draw(IGraphics& ctx) override
-        {
-            for (auto& shape : fShapes)
-            {
-				shape->draw(ctx);
-            }
-        }
 
-        // Add a node that can be drawn
-		void addNode(std::shared_ptr<SVGObject> node)
-		{
-			fShapes.push_back(node);
-		}
-        
-
-        // Load the document from an XML Iterator
-        // Since this is the top level document, we just want to kick
-        // off loading the root node 'svg', and we're done 
-        void loadFromIterator(ndt::XmlElementIterator& iter)
-        {
-
-            // skip past any elements that come before the 'svg' element
-            while (iter)
-            {
-                const ndt::XmlElement& elem = *iter;
-
-                if (!elem)
-                    break;
-
-                printXmlElement(*iter);
-
-                // Skip over these node types we don't know how to process
-                if (elem.isComment() || elem.isContent() || elem.isProcessingInstruction())
-                {
-                    iter++;
-                    continue;
-                }
-
-
-                if (elem.isStart() && (elem.name() == "svg"))
-                {
-                    auto node = SVGRootNode::createFromIterator(iter);
-                    if (node != nullptr)
-                    {
-                        addNode(node);
-                    }
-                }
-
-                iter++;
-            }
-        }
-        
-        bool load()
-        {
-			if (fFileMap == nullptr)
-				return false;
-            
-			DataChunk s = fFileMap->getChunk();
-			s = chunk_trim(s, wspChars);
-
-			XmlElementIterator iter(s);
-
-			loadFromIterator(iter);
-
-			return true;
-        }
-        
-		static std::shared_ptr<SVGDocument> createFromFilename(const std::string& filename)
-		{
-			auto doc = std::make_shared<SVGDocument>(filename);
-            doc->load();
-            
-            return doc;
-		}
-
-    };
-}
