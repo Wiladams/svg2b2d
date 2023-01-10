@@ -5,3 +5,8 @@
 *.recipe
 projects/genimage/output.png
 projects/genimage/floppy.png
+*.vsidx
+*.vsidx
+*.vsidx
+*.vsidx
+projects/.vs/projects/v17/.suo
