@@ -69,7 +69,7 @@ namespace svg2b2d {
             return *this;
         }
         
-        XmlName & (const ByteSpan &inChunk)
+        XmlName & operator=(const ByteSpan &inChunk)
         {
             reset(inChunk);
             return *this;
@@ -80,7 +80,7 @@ namespace svg2b2d {
         XmlName& reset(const ByteSpan& inChunk)
         {
             fName = inChunk;
-            fNamespace = chunk_token(fName, ':');
+            fNamespace = chunk_token(fName, charset(':'));
             if (chunk_size(fName)<1)
             {
                 fName = fNamespace;

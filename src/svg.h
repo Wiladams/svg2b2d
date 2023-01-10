@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-bool parseSVG(const ByteSpan &inChunk, BLImage &outImage);
+bool parseSVG(const void *bytes, const size_t sz, BLImage &outImage);
 
 #ifdef __cplusplus
 }

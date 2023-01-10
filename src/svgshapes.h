@@ -1,8 +1,6 @@
 #pragma once
 
 
-//#include "graphic.hpp"
-//#include "Graphics.h"
 #include "xmlscan.h"
 #include "svgtypes.h"
 #include "cssscanner.h"
@@ -11,6 +9,7 @@
 
 #include <string>
 #include <array>
+#include <functional>
 
 // Common Shapes
 // Line
@@ -29,9 +28,7 @@
 // data-*
 // BUGBUG- Need nullable types for cascading attributes
 
-namespace svg {
-	using namespace svg2b2d;
-	
+namespace svg2b2d {
 
 	// stroke-dasharray
 	// stroke-dashoffset
@@ -311,7 +308,8 @@ namespace svg {
 		
 		void drawSelf(BLContext &ctx) override
 		{
-			ctx.path(fPath);
+			ctx.fillPath(fPath);
+			ctx.strokePath(fPath);
 		}
 	};
 	
@@ -322,11 +320,6 @@ namespace svg {
 		SVGLine() :SVGPathBasedShape(){ reset(0, 0, 0, 0); }
 		SVGLine(IMapSVGNodes* iMap) :SVGPathBasedShape(iMap) {}
 		
-		//SVGLine(float x, float y, float w, float h)
-		//	:SVGPathBasedShape()
-		//{
-		//	reset(x, y, w, h);
-		//}
 		
 		void reset(float x, float y, float w, float h)
 		{
@@ -541,20 +534,20 @@ namespace svg {
 	// href of an <image> tage, or as a lookup for a 
 	// fill, or stroke pain attribute.
 	//
-	bool parseImage(const DataChunk& inChunk, BLImage& img)
+	bool parseImage(const ByteSpan& inChunk, BLImage& img)
 	{
 		bool success{ false };
-		DataChunk value = inChunk;
+		ByteSpan value = inChunk;
 
 		// figure out what kind of encoding we're dealing with
 		// value starts with: 'data:image/png;base64,<base64 encoded image>
 		//
-		DataChunk data = chunk_token(value, ":");
+		ByteSpan data = chunk_token(value, ":");
 		auto mime = chunk_token(value, ";");
 		auto encoding = chunk_token(value, ",");
 
 
-		//DataChunk inChunk = value;
+		//ByteSpan inChunk = value;
 		if (encoding == "base64")
 		{
 			if ((mime == "image/gif"))
@@ -567,9 +560,9 @@ namespace svg {
 			{
 				// allocate some memory to decode into
 				uint8_t* outBuff{ new uint8_t[chunk_size(value)]{} };
-				DataChunk outChunk = chunk_from_data_size(outBuff, chunk_size(value));
+				ByteSpan outChunk = chunk_from_data_size(outBuff, chunk_size(value));
 
-				auto outData = base64::b64tobin(value, outChunk);
+				auto outData = b64tobin(value, outChunk);
 
 				if (outData)
 				{
@@ -622,8 +615,11 @@ namespace svg {
 		{
 			if (fImage.empty())
 				return;
+			
+			BLRect dst{ fX,fY,fWidth,fHeight };
+			BLRectI srcArea{ (int)0,(int)0,(int)fImage.size().w,fImage.size().h };
 
-			ctx.scaleImage(fImage, 0, 0, fImage.size().w, fImage.size().h, fX, fY, fWidth, fHeight);
+			ctx.blitImage(dst, fImage, srcArea);
 		}
 
 		void loadSelfFromXml(const XmlElement& elem) override
@@ -853,8 +849,8 @@ namespace svg {
 
 		void drawSelf(BLContext& ctx) override
 		{
-			ctx.textFont("Calibri");	// BUGBUG - hardcoded, should go away when property supported
-			ctx.text(fText.c_str(), x, y+dy);
+			//ctx.textFont("Calibri");	// BUGBUG - hardcoded, should go away when property supported
+			//ctx.text(fText.c_str(), x, y+dy);
 
 			SVGCompoundNode::drawSelf(ctx);
 		}
@@ -1033,9 +1029,9 @@ namespace svg {
 		}
 		
 		// Load a URL Reference
-		void loadFromUrl(const DataChunk& inChunk)
+		void loadFromUrl(const ByteSpan& inChunk)
 		{
-			DataChunk str = inChunk;
+			ByteSpan str = inChunk;
 
 			auto id = chunk_trim(str, wspChars);
 			
@@ -1073,7 +1069,7 @@ namespace svg {
 			//ndt_debug::printXmlElement(elem);
 			
 			// look for an href template
-			DataChunk href = elem.getAttribute("href");
+			ByteSpan href = elem.getAttribute("href");
 			if (!href)
 				href = elem.getAttribute("xlink:href");
 
@@ -1110,7 +1106,7 @@ namespace svg {
 			{
 				// Otherwise, look for a style attribute
 				// If found, parse it, then look for a stop-color in there
-				DataChunk style = elem.getAttribute("style");
+				ByteSpan style = elem.getAttribute("style");
 				if (style)
 				{
 					XmlElement styleElement;
@@ -1256,9 +1252,9 @@ namespace svg {
 		}
 		
 		// Load a URL Reference
-		std::shared_ptr<SVGObject> findNodeByHref(const DataChunk& inChunk) override
+		std::shared_ptr<SVGObject> findNodeByHref(const ByteSpan& inChunk) override
 		{
-			DataChunk str = inChunk;
+			ByteSpan str = inChunk;
 
 			auto id = chunk_trim(str, wspChars);
 
@@ -1452,18 +1448,18 @@ namespace svg {
 
 		void draw(BLContext& ctx) override
 		{
-			ctx.push();
+			ctx.save();
 
 			//ctx.scale(0.3, 0.3);
 			
 			// Start with default state
-			ctx.strokeJoin(SVG_JOIN_ROUND);
-			ctx.ellipseMode(ELLIPSEMODE::CENTER);
-			ctx.noStroke();
-			ctx.fill(Pixel(0, 0, 0));
+			//ctx.strokeJoin(SVG_JOIN_ROUND);
+			//ctx.ellipseMode(ELLIPSEMODE::CENTER);
+			ctx.setStrokeStyle(BLRgba32(0));
+			ctx.setFillStyle(BLRgba32(0, 0, 0));
 			
-			ctx.strokeWeight(1.0);
-			ctx.textSize(16);
+			ctx.setStrokeWidth(1.0);
+			//ctx.textSize(16);
 			
 			// Apply attributes that have been gathered
 			// in the case of the root node, it's mostly the viewport
@@ -1472,7 +1468,7 @@ namespace svg {
 			// Draw the children
 			drawSelf(ctx);
 
-			ctx.pop();
+			ctx.restore();
 		}
 
 	};
@@ -1486,5 +1482,79 @@ namespace svg {
 	};
 
 
-	
+	struct SVGDocument : public IDrawable
+	{
+
+		// All the drawable nodes within this document
+		std::vector<std::shared_ptr<IDrawable>> fShapes{};
+		BLBox fExtent{};
+
+		SVGDocument() = default;
+
+
+		void draw(BLContext& ctx) override
+		{
+			for (auto& shape : fShapes)
+			{
+				shape->draw(ctx);
+			}
+		}
+
+		// Add a node that can be drawn
+		void addNode(std::shared_ptr<SVGObject> node)
+		{
+			fShapes.push_back(node);
+		}
+
+
+		// Load the document from an XML Iterator
+		// Since this is the top level document, we just want to kick
+		// off loading the root node 'svg', and we're done 
+		void loadFromIterator(XmlElementIterator& iter)
+		{
+
+			// skip past any elements that come before the 'svg' element
+			while (iter)
+			{
+				const XmlElement& elem = *iter;
+
+				if (!elem)
+					break;
+
+				//printXmlElement(*iter);
+
+				// Skip over these node types we don't know how to process
+				if (elem.isComment() || elem.isContent() || elem.isProcessingInstruction())
+				{
+					iter++;
+					continue;
+				}
+
+
+				if (elem.isStart() && (elem.name() == "svg"))
+				{
+					auto node = SVGRootNode::createFromIterator(iter);
+					if (node != nullptr)
+					{
+						addNode(node);
+					}
+				}
+
+				iter++;
+			}
+		}
+
+		bool readFromData(const ByteSpan &inChunk)
+		{
+			ByteSpan s = inChunk;
+
+			XmlElementIterator iter(s);
+
+			loadFromIterator(iter);
+
+			return true;
+		}
+
+
+	};
 }

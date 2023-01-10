@@ -1,13 +1,15 @@
 #pragma once
 
+
 #include "bspanutil.h"
 #include "shaper.h"
-#include "maths.hpp"
-#include "coloring.h"
+#include "maths.h"
 #include "svgcolors.h"
-#include "graphic.hpp"
 #include "xmlscan.h"
 #include "cssscanner.h"
+#include "drawable.h"
+
+#include <memory>
 
 // https://www.w3.org/TR/css3-values/#numbers
 //
@@ -183,7 +185,7 @@ namespace svg2b2d {
         std::string fName{};    // The tag name of the element
         BLVar fVar{};
         bool fIsVisible{ false };
-        maths::bbox2f fExtent{};
+        BLBox fExtent{};
 
         
 		SVGObject() = delete;
@@ -218,7 +220,7 @@ namespace svg2b2d {
         
 
         
-        void draw(IGraphics& ctx) override
+        void draw(BLContext& ctx) override
         {
             ;// draw the object
         }
@@ -242,7 +244,7 @@ namespace svg2b2d {
     struct IMapSVGNodes
     {
         virtual std::shared_ptr<SVGObject> findNodeById(const std::string& name) = 0;
-        virtual std::shared_ptr<SVGObject> findNodeByHref(const DataChunk& href) = 0;
+        virtual std::shared_ptr<SVGObject> findNodeByHref(const ByteSpan& href) = 0;
 
         
         virtual void addDefinition(const std::string& name, std::shared_ptr<SVGObject> obj) = 0;
@@ -299,23 +301,23 @@ namespace svg2b2d {
         void set(const bool value) { fIsSet = value; }
         bool isSet() const { return fIsSet; }
 
-		virtual void loadSelfFromChunk(const DataChunk& chunk)
+		virtual void loadSelfFromChunk(const ByteSpan& chunk)
         {
 			;
         }
 
-        virtual void loadFromChunk(const DataChunk& chunk)
+        virtual void loadFromChunk(const ByteSpan& chunk)
         {
 			loadSelfFromChunk(chunk);
         }
         
         // Apply propert to the context conditionally
-        virtual void drawSelf(IGraphics& ctx)
+        virtual void drawSelf(BLContext& ctx)
         {
             ;
         }
 
-        void draw(IGraphics& ctx) override
+        void draw(BLContext& ctx) override
         {
             if (isSet())
                 drawSelf(ctx);
@@ -324,55 +326,6 @@ namespace svg2b2d {
     };
 }
 
-namespace svg2b2d {
-    // simple type parsing
-    static INLINE int64_t toInteger(const DataChunk& inChunk);
-    static INLINE float toNumber(const DataChunk& inChunk);
-    static INLINE std::string toString(const DataChunk& inChunk);
-	
-
-    
-	// Utility, for viewbox, points, etc
-    static INLINE double nextNumber(DataChunk& inChunk, const charset& delims);
-}
-
-/// Some utility routines
-namespace svg2b2d {
-
-    // return a number next in a list of numbers
-    static INLINE double nextNumber(DataChunk& inChunk, const charset& delims)
-    {
-        // First, trim the front of whitespace
-        inChunk = chunk_ltrim(inChunk, wspChars);
-        
-        // now go for the next number separated by delimiters
-        DataChunk numChunk;
-        numChunk = chunk_token(inChunk, delims);
-        double anum = chunk_to_double(numChunk);
-        
-        return anum;
-    }
-
-    static INLINE int64_t toInteger(const DataChunk& inChunk)
-    {
-        DataChunk s = inChunk;
-        return chunk_to_i64(s);
-    }
-
-    // toNumber
-    // a floating point number
-	static INLINE float toNumber(const DataChunk& inChunk)
-	{
-        DataChunk s = inChunk;
-		return (float)chunk_to_double(s);
-	}
-
-    static INLINE std::string toString(const DataChunk& inChunk)
-    {
-        std::string str(inChunk.fStart, inChunk.fEnd);
-        return str;
-    }
-}
 
 
 // Specific types of attributes
@@ -383,7 +336,7 @@ namespace svg2b2d {
 namespace svg2b2d
 {
     // Turn a units indicator into an enum
-    static SVGDimensionUnits parseDimensionUnits(const DataChunk& units)
+    static SVGDimensionUnits parseDimensionUnits(const ByteSpan& units)
     {
         // if the chunk is blank, then return user units
         if (!units)
@@ -471,10 +424,10 @@ namespace svg2b2d
 			return *this;
         }
         
-        void loadSelfFromChunk(const DataChunk &inChunk)
+        void loadSelfFromChunk(const ByteSpan &inChunk)
 		{
-            DataChunk s = inChunk;
-            DataChunk numChunk;
+            ByteSpan s = inChunk;
+            ByteSpan numChunk;
             auto nextPart = scanNumber(s, numChunk);
             float value = (float)chunk_to_double(numChunk);
             SVGDimensionUnits units = parseDimensionUnits(nextPart);
@@ -485,7 +438,7 @@ namespace svg2b2d
 
 
     
-    static INLINE SVGDimension toDimension(const DataChunk& inChunk)
+    static INLINE SVGDimension toDimension(const ByteSpan& inChunk)
     {
         SVGDimension dim{};
         dim.loadSelfFromChunk(inChunk);
@@ -504,12 +457,12 @@ namespace svg2b2d
         float x() const { return fX; }
         float y() const { return fY; }
 
-        static SVGPoint fromChunk(const DataChunk& inChunk)
+        static SVGPoint fromChunk(const ByteSpan& inChunk)
         {
             SVGPoint point{};
 
-            DataChunk s = inChunk;
-            DataChunk numChunk;
+            ByteSpan s = inChunk;
+            ByteSpan numChunk;
             charset numDelims = wspChars + ',';
 
             point.fX = (float)nextNumber(s, numDelims);
@@ -531,19 +484,19 @@ namespace svg2b2d {
 		SVGOpacity(IMapSVGNodes* iMap):SVGVisualProperty(iMap){}
 
 
-        void drawSelf(IGraphics& ctx)
+        void drawSelf(BLContext& ctx)
         {
 			SVGVisualProperty::drawSelf(ctx);
-            ctx.fillOpacity(fValue);
+			ctx.setFillAlpha(fValue);
         }
 
-		void loadSelfFromChunk(const DataChunk& inChunk)
+		void loadSelfFromChunk(const ByteSpan& inChunk)
 		{
             fValue = toDimension(inChunk).calculatePixels(1);
             set(true);
 		}
 
-        static std::shared_ptr<SVGOpacity> createFromChunk(IMapSVGNodes* root, const std::string& name, const DataChunk& inChunk)
+        static std::shared_ptr<SVGOpacity> createFromChunk(IMapSVGNodes* root, const std::string& name, const ByteSpan& inChunk)
         {
             std::shared_ptr<SVGOpacity> sw = std::make_shared<SVGOpacity>(root);
 
@@ -579,18 +532,18 @@ namespace svg2b2d {
             return *this;
         }
 
-        void drawSelf(IGraphics& ctx)
+        void drawSelf(BLContext& ctx)
         {
-            ctx.textSize(fValue);
+            //ctx.textSize(fValue);
         }
 
-        void loadSelfFromChunk(const DataChunk& inChunk)
+        void loadSelfFromChunk(const ByteSpan& inChunk)
         {
             fValue = toDimension(inChunk).calculatePixels(96);
             set(true);
         }
 
-        static std::shared_ptr<SVGFontSize> createFromChunk(IMapSVGNodes* root, const std::string& name, const DataChunk& inChunk)
+        static std::shared_ptr<SVGFontSize> createFromChunk(IMapSVGNodes* root, const std::string& name, const ByteSpan& inChunk)
         {
             std::shared_ptr<SVGFontSize> sw = std::make_shared<SVGFontSize>(root);
 
@@ -608,26 +561,19 @@ namespace svg2b2d {
     };
 
 
-    /*
+    
     // Text Alignment
 enum class ALIGNMENT : unsigned
 {
-    CENTER = 0x01,
-
-    LEFT = 0x02,
-    RIGHT = 0x04,
-
-    TOP         = 0x10, 
-    BASELINE    = 0x20,
-    BOTTOM      = 0x40,
-    MIDLINE     = 0x80,
-
+    MIDDLE = 0x01,
+    START = 0x02,
+    END = 0x04,
 } ;
-    */
+    
     struct SVGTextAnchor : public SVGVisualProperty
     {
-        ALIGNMENT fValue{ ALIGNMENT::LEFT };
-
+        ALIGNMENT fValue{ ALIGNMENT::START };
+        
         //SVGTextAnchor() : SVGVisualProperty() {}
 		SVGTextAnchor(IMapSVGNodes* iMap) : SVGVisualProperty(iMap) {}
         SVGTextAnchor(const SVGTextAnchor& other) :SVGVisualProperty(other) { fValue = other.fValue; }
@@ -639,25 +585,26 @@ enum class ALIGNMENT : unsigned
             return *this;
         }
 
-        void drawSelf(IGraphics& ctx)
+        void drawSelf(BLContext& ctx)
         {
-            ctx.textAlign(fValue, ALIGNMENT::BASELINE);
+            // BUGBUG, need to calculate alignment
+            //ctx.textAlign(fValue, ALIGNMENT::BASELINE);
         }
 
-        void loadSelfFromChunk(const DataChunk& inChunk)
+        void loadSelfFromChunk(const ByteSpan& inChunk)
         {
             if (inChunk == "start")
-                fValue = ALIGNMENT::LEFT;
+                fValue = ALIGNMENT::START;
 			else if (inChunk == "middle")
-				fValue = ALIGNMENT::CENTER;
+				fValue = ALIGNMENT::MIDDLE;
 			else if (inChunk == "end")
-				fValue = ALIGNMENT::RIGHT;
+				fValue = ALIGNMENT::END;
 
 
             set(true);
         }
 
-        static std::shared_ptr<SVGTextAnchor> createFromChunk(IMapSVGNodes* root, const std::string& name, const DataChunk& inChunk)
+        static std::shared_ptr<SVGTextAnchor> createFromChunk(IMapSVGNodes* root, const std::string& name, const ByteSpan& inChunk)
         {
             std::shared_ptr<SVGTextAnchor> sw = std::make_shared<SVGTextAnchor>(root);
 
@@ -676,9 +623,8 @@ enum class ALIGNMENT : unsigned
     
     struct SVGTextAlign : public SVGVisualProperty
     {
-        ALIGNMENT fValue{ ALIGNMENT::LEFT };
+        ALIGNMENT fValue{ ALIGNMENT::START };
 
-        //SVGTextAlign() : SVGVisualProperty() {}
 		SVGTextAlign(IMapSVGNodes* iMap) : SVGVisualProperty(iMap) {}
         SVGTextAlign(const SVGTextAlign& other) :SVGVisualProperty(other) { fValue = other.fValue; }
         
@@ -689,20 +635,21 @@ enum class ALIGNMENT : unsigned
             return *this;
         }
 
-        void drawSelf(IGraphics& ctx)
+        void drawSelf(BLContext& ctx)
         {
-            ctx.textAlign(fValue, ALIGNMENT::BASELINE);
+			// BUGBUG, need to calculate alignment
+            //ctx.textAlign(fValue, ALIGNMENT::BASELINE);
         }
 
-        void loadSelfFromChunk(const DataChunk& inChunk)
+        void loadSelfFromChunk(const ByteSpan& inChunk)
         {
             if (inChunk == "center")
-				fValue = ALIGNMENT::CENTER;
+				fValue = ALIGNMENT::MIDDLE;
             
             set(true);
         }
 
-        static std::shared_ptr<SVGTextAlign> createFromChunk(IMapSVGNodes* root, const std::string& name, const DataChunk& inChunk)
+        static std::shared_ptr<SVGTextAlign> createFromChunk(IMapSVGNodes* root, const std::string& name, const ByteSpan& inChunk)
         {
             std::shared_ptr<SVGTextAlign> sw = std::make_shared<SVGTextAlign>(root);
 
@@ -722,12 +669,12 @@ enum class ALIGNMENT : unsigned
 
 
 namespace svg2b2d {
-    void parseStyleAttribute(const DataChunk & inChunk, XmlElement &styleElement)
+    void parseStyleAttribute(const ByteSpan & inChunk, XmlElement &styleElement)
     {
         // Turn the style element into attributes of an XmlElement, 
         // then, the caller can use that to more easily parse whatever they're
         // looking for.
-        DataChunk styleChunk = inChunk;
+        ByteSpan styleChunk = inChunk;
         
         if (styleChunk) {
             // use CSSInlineIterator to iterate through the key value pairs
@@ -771,7 +718,7 @@ namespace svg2b2d {
 
 namespace svg2b2d {
 
-    static vec4b parseColorHex(const DataChunk& chunk)
+    static BLRgba32 parseColorHex(const ByteSpan& chunk)
     {
         // BUGBUG - making a copy of the chunk to use sscanf
         char str[64];
@@ -779,12 +726,12 @@ namespace svg2b2d {
 
         unsigned int r = 0, g = 0, b = 0;
         if (sscanf_s(str, "#%2x%2x%2x", &r, &g, &b) == 3)		// 2 digit hex
-            return rgb(r, g, b);
+            return BLRgba32(r, g, b);
         if (sscanf_s(str, "#%1x%1x%1x", &r, &g, &b) == 3)		// 1 digit hex, e.g. #abc -> 0xccbbaa
-            return rgb(r * 17, g * 17, b * 17);			    // same effect as (r<<4|r), (g<<4|g), ..
+            return BLRgba32(r * 17, g * 17, b * 17);			    // same effect as (r<<4|r), (g<<4|g), ..
 
         // if not one of those cases, just return a mid-gray
-        return rgb(128, 128, 128);
+        return BLRgba32(128, 128, 128);
     }
 
 
@@ -793,10 +740,10 @@ namespace svg2b2d {
     // This function returns gray (rgb(128, 128, 128) == '#808080') on parse errors
     // for backwards compatibility. Note: other image viewers return black instead.
 
-    static vec4b parseColorRGB(const DataChunk& inChunk)
+    static BLRgba32 parseColorRGB(const ByteSpan& inChunk)
     {
         // skip past the leading "rgb("
-        DataChunk s = inChunk;
+        ByteSpan s = inChunk;
         auto leading = chunk_token(s, "(");
 
         // s should now point to the first number
@@ -819,7 +766,7 @@ namespace svg2b2d {
         // if it's not there, then return gray
         auto num = chunk_token(nums, ",");
         if (chunk_size(num) < 1)
-            return rgba(128, 128, 128, 0);
+            return BLRgba32(128, 128, 128, 0);
 
         while (num)
         {
@@ -846,12 +793,12 @@ namespace svg2b2d {
         }
 
         if (i == 4)
-            return rgba(rgbi[0], rgbi[1], rgbi[2], rgbi[3]);
+            return BLRgba32(rgbi[0], rgbi[1], rgbi[2], rgbi[3]);
 
-        return rgb(rgbi[0], rgbi[1], rgbi[2]);
+        return BLRgba32(rgbi[0], rgbi[1], rgbi[2]);
     }
 
-    static vec4b parseColorName(const DataChunk& inChunk)
+    static BLRgba32 parseColorName(const ByteSpan& inChunk)
     {
         std::string cName = std::string(inChunk.fStart, inChunk.fEnd);
 
@@ -861,7 +808,7 @@ namespace svg2b2d {
         // BUGBUG - this is different than not having a color attribute
         // in which case, we might want to eliminate color, and allow ancestor's color to come through
         if (!svg::colors.contains(cName))
-            return rgba(128, 128, 128, 255);
+            return BLRgba32(128, 128, 128, 255);
 
         return svg::colors[cName];
     }
@@ -913,31 +860,31 @@ namespace svg2b2d {
 
         // Need to distinguish which function gets called
         // BUGBUG
-        void drawSelf(IGraphics& ctx)
+        void drawSelf(BLContext& ctx)
         {
             switch (fPaintFor)
             {
 
             case SVG_PaintForFill:
                 if (fExplicitNone)
-                    ctx.noFill();
+                    ctx.setFillStyle(BLRgba32(0));
                 else
-                    ctx.fill(fPaint);
+                    ctx.setFillStyle(fPaint);
                 break;
 
             case SVG_PaintForStroke:
                 if (fExplicitNone)
-                    ctx.noStroke();
+					ctx.setStrokeStyle(BLRgba32(0));
                 else
-                    ctx.stroke(fPaint);
+                    ctx.setStrokeStyle(fPaint);
                 break;
             }
 
         }
 
-        void loadFromUrl(const DataChunk &inChunk)
+        void loadFromUrl(const ByteSpan &inChunk)
         {
-            DataChunk str = inChunk;
+            ByteSpan str = inChunk;
             
             // the id we want should look like this
             // url(#id)
@@ -974,15 +921,15 @@ namespace svg2b2d {
             }
         }
         
-        void loadSelfFromChunk (const DataChunk& inChunk)
+        void loadSelfFromChunk (const ByteSpan& inChunk)
         {
-            maths::vec4b c{};
+            BLRgba32 c{};
             
             blVarAssignRgba32(&fPaint, c.value);
 
-            DataChunk str = inChunk;
-            DataChunk rgbStr = chunk_from_cstr("rgb(");
-            DataChunk rgbaStr = chunk_from_cstr("rgba(");
+            ByteSpan str = inChunk;
+            ByteSpan rgbStr = chunk_from_cstr("rgb(");
+            ByteSpan rgbaStr = chunk_from_cstr("rgba(");
 
             size_t len = 0;
 
@@ -1019,7 +966,7 @@ namespace svg2b2d {
                     // user wants some sort of color, which is either invalid name
                     // or a color function we don't support yet
                     // so set a default gray color
-                    c = rgb(128, 128, 128);
+                    c = BLRgba32(128, 128, 128);
                     blVarAssignRgba32(&fPaint, c.value);
                     set(true);
                 }
@@ -1028,7 +975,7 @@ namespace svg2b2d {
 
         }
 
-        static std::shared_ptr<SVGPaint> createFromChunk(IMapSVGNodes* root, const std::string& name, const DataChunk& inChunk)
+        static std::shared_ptr<SVGPaint> createFromChunk(IMapSVGNodes* root, const std::string& name, const ByteSpan& inChunk)
         {
             std::shared_ptr<SVGPaint> paint = std::make_shared<SVGPaint>(root);
 
@@ -1094,10 +1041,9 @@ namespace svg2b2d {
 namespace svg2b2d {
     struct SVGFillRule : public SVGVisualProperty
     {
-		unsigned int fValue{ SVG_FILLRULE_NONZERO };
+		BLFillRule fValue{ BL_FILL_RULE_NON_ZERO };
 
    
-
         //SVGFillRule() : SVGVisualProperty() {}
 		SVGFillRule(IMapSVGNodes* iMap) : SVGVisualProperty(iMap) {}
         SVGFillRule(const SVGFillRule& other) :SVGVisualProperty(other)
@@ -1112,26 +1058,26 @@ namespace svg2b2d {
             return *this;
         }
 
-        void drawSelf(IGraphics& ctx)
+        void drawSelf(BLContext& ctx)
         {
-            ctx.fillRule(fValue);
+			ctx.setFillRule(fValue);
         }
 
-        void loadSelfFromChunk(const DataChunk& inChunk)
+        void loadSelfFromChunk(const ByteSpan& inChunk)
         {
-            DataChunk s = chunk_trim(inChunk, wspChars);
+            ByteSpan s = chunk_trim(inChunk, wspChars);
 
             set(true);
 
             if (s == "nonzero")
-                fValue = SVG_FILLRULE_NONZERO;
+                fValue = BL_FILL_RULE_NON_ZERO;
             else if (s == "evenodd")
-                fValue = SVG_FILLRULE_EVENODD;
+                fValue = BL_FILL_RULE_EVEN_ODD;
             else
                 set(false);
         }
 
-        static std::shared_ptr<SVGFillRule> createFromChunk(IMapSVGNodes* root, const std::string& name, const DataChunk& inChunk)
+        static std::shared_ptr<SVGFillRule> createFromChunk(IMapSVGNodes* root, const std::string& name, const ByteSpan& inChunk)
         {
             std::shared_ptr<SVGFillRule> node = std::make_shared<SVGFillRule>(root);
 
@@ -1165,18 +1111,18 @@ namespace svg2b2d {
 			return *this;
 		}
 
-		void drawSelf(IGraphics& ctx)
+		void drawSelf(BLContext& ctx)
 		{
-			ctx.strokeWeight(fWidth);
+			ctx.setStrokeWidth(fWidth);
 		}
 
-		void loadSelfFromChunk(const DataChunk& inChunk)
+		void loadSelfFromChunk(const ByteSpan& inChunk)
 		{
 			fWidth = toNumber(inChunk);
 			set(true);
 		}
 
-		static std::shared_ptr<SVGStrokeWidth> createFromChunk(IMapSVGNodes* root, const std::string& name, const DataChunk& inChunk)
+		static std::shared_ptr<SVGStrokeWidth> createFromChunk(IMapSVGNodes* root, const std::string& name, const ByteSpan& inChunk)
 		{
 			std::shared_ptr<SVGStrokeWidth> sw = std::make_shared<SVGStrokeWidth>(root);
 
@@ -1212,12 +1158,12 @@ namespace svg2b2d {
 			return *this;
         }
 
-		void drawSelf(IGraphics& ctx)
+		void drawSelf(BLContext& ctx)
 		{
-			ctx.strokeMiterLimit(fMiterLimit);
+			ctx.setStrokeMiterLimit(fMiterLimit);
 		}
         
-		void loadSelfFromChunk(const DataChunk& inChunk)
+		void loadSelfFromChunk(const ByteSpan& inChunk)
 		{
 			fMiterLimit = toNumber(inChunk);
 			fMiterLimit = maths::clamp((float)fMiterLimit, 1.0f, 10.0f);
@@ -1225,7 +1171,7 @@ namespace svg2b2d {
 			set(true);
 		}
 
-		static std::shared_ptr<SVGStrokeMiterLimit> createFromChunk(IMapSVGNodes* root, const std::string& name, const DataChunk& inChunk)
+		static std::shared_ptr<SVGStrokeMiterLimit> createFromChunk(IMapSVGNodes* root, const std::string& name, const ByteSpan& inChunk)
 		{
 			std::shared_ptr<SVGStrokeMiterLimit> sw = std::make_shared<SVGStrokeMiterLimit>(root);
 
@@ -1246,9 +1192,9 @@ namespace svg2b2d {
     
     struct SVGStrokeLineCap : public SVGVisualProperty
     {
-        SVGlineCap fLineCap{ SVG_CAP_BUTT };
+        BLStrokeCap fLineCap{ BL_STROKE_CAP_BUTT };
 
-		//SVGStrokeLineCap() : SVGVisualProperty() {}
+
 		SVGStrokeLineCap(IMapSVGNodes* iMap) : SVGVisualProperty(iMap) {}
 		SVGStrokeLineCap(const SVGStrokeLineCap& other) :SVGVisualProperty(other)
 		{
@@ -1262,28 +1208,28 @@ namespace svg2b2d {
 			return *this;
 		}
 
-		void drawSelf(IGraphics& ctx)
+		void drawSelf(BLContext& ctx)
 		{
-			ctx.strokeCaps(fLineCap);
+            ctx.setStrokeCaps(fLineCap);
 		}
 
-		void loadSelfFromChunk(const DataChunk& inChunk)
+		void loadSelfFromChunk(const ByteSpan& inChunk)
 		{
-            DataChunk s = chunk_trim(inChunk, wspChars);
+            ByteSpan s = chunk_trim(inChunk, wspChars);
 
             set(true);
             
 			if (s == "butt")
-				fLineCap = SVG_CAP_BUTT;
+				fLineCap = BL_STROKE_CAP_BUTT;
 			else if (s == "round")
-				fLineCap = SVG_CAP_ROUND;
+				fLineCap = BL_STROKE_CAP_ROUND;
 			else if (s == "square")
-				fLineCap = SVG_CAP_SQUARE;
+				fLineCap = BL_STROKE_CAP_SQUARE;
             else
 			    set(false);
 		}
 
-		static std::shared_ptr<SVGStrokeLineCap> createFromChunk(IMapSVGNodes* root, const std::string& name, const DataChunk& inChunk)
+		static std::shared_ptr<SVGStrokeLineCap> createFromChunk(IMapSVGNodes* root, const std::string& name, const ByteSpan& inChunk)
 		{
 			std::shared_ptr<SVGStrokeLineCap> stroke = std::make_shared<SVGStrokeLineCap>(root);
 
@@ -1304,9 +1250,8 @@ namespace svg2b2d {
 	// A visual property to set the line join for a stroke
     struct SVGStrokeLineJoin : public SVGVisualProperty
     {
-        SVGlineJoin fLineJoin{ SVG_JOIN_MITER_BEVEL };
+        BLStrokeJoin fLineJoin{ SVG_JOIN_MITER_BEVEL };
 
-		//SVGStrokeLineJoin() : SVGVisualProperty() {}
 		SVGStrokeLineJoin(IMapSVGNodes* iMap) : SVGVisualProperty(iMap) {}
 		SVGStrokeLineJoin(const SVGStrokeLineJoin& other) :SVGVisualProperty(other), fLineJoin(other.fLineJoin) {}  
         
@@ -1317,33 +1262,33 @@ namespace svg2b2d {
 			return *this;
         }
         
-        void drawSelf(IGraphics& ctx)
+        void drawSelf(BLContext& ctx)
         {
-			ctx.strokeJoin(fLineJoin);
+			ctx.setStrokeJoin(fLineJoin);
         }
         
-        void loadSelfFromChunk(const DataChunk& inChunk)
+        void loadSelfFromChunk(const ByteSpan& inChunk)
         {
-            DataChunk s = chunk_trim(inChunk, wspChars);
+            ByteSpan s = chunk_trim(inChunk, wspChars);
 
             set(true);
             
 			if (s == "miter")
-				fLineJoin = SVG_JOIN_MITER_BEVEL;
+				fLineJoin = BL_STROKE_JOIN_MITER_BEVEL;
 			else if (s == "round")
-				fLineJoin = SVG_JOIN_ROUND;
+				fLineJoin = BL_STROKE_JOIN_ROUND;
 			else if (s == "bevel")
-				fLineJoin = SVG_JOIN_BEVEL;
+				fLineJoin = BL_STROKE_JOIN_BEVEL;
             //else if (s == "arcs")
 			//	fLineJoin = SVG_JOIN_ARCS;
 			else if (s == "miter-clip")
-				fLineJoin = SVG_JOIN_MITER_CLIP;
+				fLineJoin = BL_STROKE_JOIN_MITER_CLIP;
 			else
 				set(false);
 
         }
         
-		static std::shared_ptr<SVGStrokeLineJoin> createFromChunk(IMapSVGNodes* root, const std::string& name, const DataChunk& inChunk)
+		static std::shared_ptr<SVGStrokeLineJoin> createFromChunk(IMapSVGNodes* root, const std::string& name, const ByteSpan& inChunk)
 		{
 			std::shared_ptr<SVGStrokeLineJoin> stroke = std::make_shared<SVGStrokeLineJoin>(root);
 
@@ -1372,7 +1317,7 @@ namespace svg2b2d {
     
     struct SVGViewbox : public SVGVisualProperty
     {
-        maths::rectf fRect{};
+        BLRect fRect{};
 
 
         SVGViewbox() :SVGVisualProperty(nullptr) {}
@@ -1398,19 +1343,19 @@ namespace svg2b2d {
         float width() const { return fRect.w; }
         float height() const {return fRect.h;}
         
-        void loadSelfFromChunk(const DataChunk& inChunk)
+        void loadSelfFromChunk(const ByteSpan& inChunk)
         {
-			DataChunk s = inChunk;
-			DataChunk numChunk;
+			ByteSpan s = inChunk;
+			ByteSpan numChunk;
             charset numDelims = wspChars+',';
                 
-            fRect.x = (float)nextNumber(s, numDelims);
-			fRect.y = (float)nextNumber(s, numDelims);
-			fRect.w = (float)nextNumber(s, numDelims);
-			fRect.h = (float)nextNumber(s, numDelims);
+            fRect.x = nextNumber(s, numDelims);
+			fRect.y = nextNumber(s, numDelims);
+			fRect.w = nextNumber(s, numDelims);
+			fRect.h = nextNumber(s, numDelims);
         }
 
-        static SVGViewbox createFromChunk(IMapSVGNodes* root, const DataChunk& inChunk)
+        static SVGViewbox createFromChunk(IMapSVGNodes* root, const ByteSpan& inChunk)
         {
             SVGViewbox vbox{};
 
@@ -1438,11 +1383,11 @@ namespace svg2b2d
 {
 
 
-    static std::vector<SVGPoint> toPoints(const DataChunk &inChunk)
+    static std::vector<SVGPoint> toPoints(const ByteSpan &inChunk)
 	{
 		std::vector<SVGPoint> points;
 
-		DataChunk s = inChunk;
+		ByteSpan s = inChunk;
 		charset numDelims = wspChars + ',';
 
 		while (s)
@@ -1468,11 +1413,11 @@ namespace svg2b2d
     //
     // parsing transforms
     //
-    static DataChunk parseTransformArgs(const DataChunk& inChunk, double* args, int maxNa, int& na)
+    static ByteSpan parseTransformArgs(const ByteSpan& inChunk, double* args, int maxNa, int& na)
     {
         na = 0;
 
-        DataChunk s = inChunk;
+        ByteSpan s = inChunk;
 
         // Skip past everything until we see a '('
 		s = chunk_find_char(s, '(');
@@ -1491,7 +1436,7 @@ namespace svg2b2d
         // represents that range.
         // Start the chunk at the current position
         // and expand it after we find the ')'
-        DataChunk item = s;
+        ByteSpan item = s;
         item.fEnd = item.fStart;
 
         // scan until the closing ')'
@@ -1510,7 +1455,7 @@ namespace svg2b2d
         item.fEnd = s.fStart;
 
         // Create a chunk that will represent a specific number to be parsed.
-        DataChunk numChunk{};
+        ByteSpan numChunk{};
 
         // Move the source chunk cursor past the ')', so that whatever
         // needs to use it next is ready to go.
@@ -1529,9 +1474,9 @@ namespace svg2b2d
         return s;
     }
 
-    static DataChunk parseMatrix(DataChunk& inMatrix, BLMatrix2D &m)
+    static ByteSpan parseMatrix(ByteSpan& inMatrix, BLMatrix2D &m)
     {
-        DataChunk s = inMatrix;
+        ByteSpan s = inMatrix;
         m.reset();  // start with identity
 
         
@@ -1549,11 +1494,11 @@ namespace svg2b2d
     }
     
     
-    static DataChunk parseTranslate(const DataChunk& inChunk, BLMatrix2D& xform)
+    static ByteSpan parseTranslate(const ByteSpan& inChunk, BLMatrix2D& xform)
     {
         double args[2];
         int na = 0;
-        DataChunk s = inChunk;
+        ByteSpan s = inChunk;
         s = parseTransformArgs(s, args, 2, na);
         if (na == 1)
             args[1] = 0.0;
@@ -1563,11 +1508,11 @@ namespace svg2b2d
         return s;
     }
     
-    static DataChunk parseScale(const DataChunk& inChunk, BLMatrix2D& xform)
+    static ByteSpan parseScale(const ByteSpan& inChunk, BLMatrix2D& xform)
     {
         double args[2]{ 0 };
         int na = 0;
-        DataChunk s = inChunk;
+        ByteSpan s = inChunk;
         
         s = parseTransformArgs(s, args, 2, na);
 
@@ -1580,11 +1525,11 @@ namespace svg2b2d
     }
     
     
-    static DataChunk parseSkewX(const DataChunk& inChunk, BLMatrix2D& xform)
+    static ByteSpan parseSkewX(const ByteSpan& inChunk, BLMatrix2D& xform)
     {
         double args[1];
         int na = 0;
-        DataChunk s = inChunk;
+        ByteSpan s = inChunk;
         s = parseTransformArgs(s, args, 1, na);
 
         xform.resetToSkewing(maths::radians(args[0]), 0.0f);
@@ -1592,11 +1537,11 @@ namespace svg2b2d
         return s;
     }
 
-    static DataChunk parseSkewY(const DataChunk& inChunk, BLMatrix2D& xform)
+    static ByteSpan parseSkewY(const ByteSpan& inChunk, BLMatrix2D& xform)
     {
         double args[1]{ 0 };
         int na = 0;
-        DataChunk s = inChunk;
+        ByteSpan s = inChunk;
         s = parseTransformArgs(s, args, 1, na);
 
         xform.resetToSkewing(0.0f, maths::radians(args[0]));
@@ -1605,13 +1550,13 @@ namespace svg2b2d
     }
     
     
-    static DataChunk parseRotate(const DataChunk& inChunk, BLMatrix2D& xform)
+    static ByteSpan parseRotate(const ByteSpan& inChunk, BLMatrix2D& xform)
     {
         double args[3]{ 0 };
         int na = 0;
         float m[6]{ 0 };
         float t[6]{ 0 };
-        DataChunk s = inChunk;
+        ByteSpan s = inChunk;
 
 		s = parseTransformArgs(s, args, 3, na);
 
@@ -1647,9 +1592,9 @@ namespace svg2b2d
 
         BLMatrix2D& getTransform() { return fTransform; }
 
-		void loadSelfFromChunk(const DataChunk& inChunk) override
+		void loadSelfFromChunk(const ByteSpan& inChunk) override
 		{
-            DataChunk s = inChunk;
+            ByteSpan s = inChunk;
             fTransform.reset();     // set to identity initially
             
 
@@ -1711,12 +1656,12 @@ namespace svg2b2d
 
 		}
 
-        void drawSelf(IGraphics& ctx) override
+        void drawSelf(BLContext& ctx) override
         {
-			ctx.transform(fTransform.m);
+			ctx.transform(fTransform);
         }
 
-        static std::shared_ptr<SVGTransform> createFromChunk(IMapSVGNodes* root, const std::string& name, const DataChunk& inChunk)
+        static std::shared_ptr<SVGTransform> createFromChunk(IMapSVGNodes* root, const std::string& name, const ByteSpan& inChunk)
         {
 			std::shared_ptr<SVGTransform> tform = std::make_shared<SVGTransform>(root);
 

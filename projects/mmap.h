@@ -21,7 +21,7 @@
 
 #include "bspan.h"
 
-namespace memmap
+namespace filemapper
 {
     class mmap
     {
@@ -76,8 +76,6 @@ namespace memmap
 
             return true;
         }
-
-		ByteSpan getSpan() { return chunk_from_data_size(fData, fSize); }
 
 
         // factory method

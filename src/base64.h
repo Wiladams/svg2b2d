@@ -50,7 +50,7 @@ namespace svg2b2d
           * @param src Source base64 string.
           * @return If success a pointer to the next byte in memory block.
           *         Null if string has a bad format.  */
-        static svg2b2d::DataChunk b64tobin(svg2b2d::DataChunk& outChunk, svg2b2d::DataChunk& inChunk);
+        static ByteSpan b64tobin(svg2b2d::ByteSpan& outChunk, svg2b2d::ByteSpan& inChunk);
 
         /** Convert a base64 string to binary format.
           * @param p Source base64 string and destination memory block.
@@ -96,7 +96,7 @@ namespace svg2b2d
     //
     // Convert a base64 chunk to binary format.
     //
-    static svg2b2d::DataChunk b64tobin(svg2b2d::DataChunk& inChunk, svg2b2d::DataChunk &outChunk)
+    static svg2b2d::ByteSpan b64tobin(svg2b2d::ByteSpan& inChunk, svg2b2d::ByteSpan &outChunk)
     {
 		char const* src = (const char *)inChunk.fStart;
         uint8_t const* s = (uint8_t *)src;

@@ -3,6 +3,7 @@
 #include "blend2d.h"
 
 #include "bspanutil.h"
+#include "maths.h"
 
 #include <cstdint>
 #include <vector>
@@ -102,7 +103,7 @@ namespace svg2b2d
     struct PathSegment
     {
         SegmentKind fCommand{ SegmentKind::INVALID };
-        std::vector<float> fNumbers{};
+        std::vector<double> fNumbers{};
 
         PathSegment() { ; }
         PathSegment(SegmentKind aKind) :fCommand(aKind) { ; }
@@ -111,9 +112,11 @@ namespace svg2b2d
             , fNumbers(other.fNumbers)
         {}
 
-		void addNumber(float aNumber) { fNumbers.push_back(aNumber); }
-		void addPoint(float x, float y) { fNumbers.push_back(x); fNumbers.push_back(y); }
+		void addNumber(double aNumber) { fNumbers.push_back(aNumber); }
+		void addPoint(double x, double y) { fNumbers.push_back(x); fNumbers.push_back(y); }
     };
+
+
 
 
     
@@ -134,7 +137,7 @@ namespace svg2b2d
 
     static ByteSpan scanNumber(const ByteSpan& inChunk, ByteSpan& numchunk)
     {
-        static svg2b2d::charset digitChars("0123456789");                   // only digits
+        static charset digitChars("0123456789");                   // only digits
         
         ByteSpan s = inChunk;
         numchunk = inChunk;
@@ -222,7 +225,8 @@ namespace svg2b2d
                 }
 
                 float afloat = 0;
-                std::from_chars((const char*)numChunk.fStart, (const char*)numChunk.fEnd, afloat);
+				afloat = toNumber(numChunk);
+                //std::from_chars((const char*)numChunk.fStart, (const char*)numChunk.fEnd, afloat);
 
                 numbers.push_back(afloat);
             }
@@ -287,7 +291,8 @@ namespace svg2b2d
 				if (numChunk)
 				{
 					float afloat = 0;
-					std::from_chars((const char*)numChunk.fStart, (const char*)numChunk.fEnd, afloat);
+                    afloat = toNumber(numChunk);
+					//std::from_chars((const char*)numChunk.fStart, (const char*)numChunk.fEnd, afloat);
 					commands.back().addNumber(afloat);
                     //printf("  %3.5f\n", afloat);
 				}
@@ -310,23 +315,22 @@ namespace svg2b2d
     {
     public:
 
-        maths::vec2f fLastPosition{};
-		maths::vec2f fLastStart{};
+
+		BLPoint fLastStart{};
 		SegmentKind fLastCommand{};
         
-        //BLPath fPath{};
         BLPath fWorkingPath{};
 
 
     public:
         BLPath& getPath() { return fWorkingPath; }
 
-        const maths::vec2f & lastPosition() noexcept
+        const BLPoint & lastPosition() noexcept
         {
             BLPoint apoint{};
 			fWorkingPath.getLastVertex(&apoint);
             
-            return { (float)apoint.x, (float)apoint.y };
+            return apoint;
         }
         
         // The case where the path did not end
@@ -339,7 +343,7 @@ namespace svg2b2d
            //     fWorkingPath.reset();
            // }
 
-            fLastPosition = lastPosition();
+
         }
         
         // SVG - M
@@ -368,7 +372,6 @@ namespace svg2b2d
                 for (size_t i = 2; i < cmd.fNumbers.size(); i += 2)
                 {
                     fWorkingPath.lineTo(cmd.fNumbers[i], cmd.fNumbers[i + 1]);
-                    //fLastPosition = maths::vec2f{ cmd.fNumbers[i], cmd.fNumbers[i + 1] };
                 }
             }
 
@@ -381,15 +384,6 @@ namespace svg2b2d
             if (cmd.fNumbers.size() < 2) {
                 printf("moveBy - Rejected: %zd\n", cmd.fNumbers.size());
                 return;
-            }
-
-            maths::vec2f lastPoint{};
-
-            if (fWorkingPath.empty())
-                lastPoint = { 0, 0 };
-            else {
-                lastPoint = lastPosition();
-                finishWorking();
             }
 
             fWorkingPath.moveTo(lastPosition().x + cmd.fNumbers[0], lastPosition().y + cmd.fNumbers[1]);
@@ -738,17 +732,17 @@ namespace svg2b2d
                 return;
             }
             
-            float rx = cmd.fNumbers[0];
-			float ry = cmd.fNumbers[1];
-			float xRotation = cmd.fNumbers[2];
-			float largeArcFlag = cmd.fNumbers[3];
-			float sweepFlag = cmd.fNumbers[4];
-			float x = cmd.fNumbers[5];
-			float y = cmd.fNumbers[6];
+            double rx = cmd.fNumbers[0];
+            double ry = cmd.fNumbers[1];
+            double xRotation = cmd.fNumbers[2];
+            double largeArcFlag = cmd.fNumbers[3];
+            double sweepFlag = cmd.fNumbers[4];
+            double x = cmd.fNumbers[5];
+            double y = cmd.fNumbers[6];
             
 			bool larc = largeArcFlag > 0.5f;
 			bool swp = sweepFlag > 0.5f;
-			float rotation = maths::radians(xRotation);
+            double rotation = maths::radians(xRotation);
 
             fWorkingPath.ellipticArcTo(BLPoint(rx, ry), rotation, larc, swp, BLPoint(x, y));
 

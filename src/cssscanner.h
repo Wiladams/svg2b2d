@@ -21,32 +21,32 @@ namespace svg2b2d
 	struct CSSSelector
 	{
 		std::string fName{};
-		std::map<std::string, svg2b2d::DataChunk> fProperties{};
+		std::map<std::string, ByteSpan> fProperties{};
 
 		CSSSelector() = default;
 		
-		CSSSelector(std::string &name, const DataChunk& aChunk)
+		CSSSelector(std::string &name, const ByteSpan& aChunk)
 		{
 			fName = name;
 			loadFromChunk(aChunk);
 		}
 		
 		const std::string& name() const { return fName; }
-		const std::map<std::string, svg2b2d::DataChunk>& properties() const { return fProperties; }
+		const std::map<std::string, ByteSpan>& properties() const { return fProperties; }
 		
 		
 		explicit operator bool() const { return !fName.empty() && fProperties.size() > 0; }
 		
-		void loadFromChunk(const DataChunk& inChunk)
+		void loadFromChunk(const ByteSpan& inChunk)
 		{
-			DataChunk s = inChunk;
+			ByteSpan s = inChunk;
 			
 			// get the proper-value combinations, which are separated by ';'
 			// then split each property-value pair into two chunks
 			while (s)
 			{
-				DataChunk pcombo = chunk_token(s, svg2b2d::charset(";"));
-				DataChunk pname = chunk_token(pcombo, svg2b2d::charset(":"));
+				ByteSpan pcombo = chunk_token(s, svg2b2d::charset(";"));
+				ByteSpan pname = chunk_token(pcombo, svg2b2d::charset(":"));
 				
 				// Add the property to the map
 				if (pcombo && pname)
@@ -60,13 +60,13 @@ namespace svg2b2d
 			}
 		}
 
-		DataChunk getPropertyValue(std::string name)
+		ByteSpan getPropertyValue(std::string name)
 		{
 			auto it = fProperties.find(name);
 			if (it != fProperties.end())
 				return it->second;
 			else
-				return DataChunk();
+				return ByteSpan();
 		}
 	};
 
@@ -76,11 +76,11 @@ namespace svg2b2d
 	// This iterator is used to iterate over the inline style attributes of an element
 	// Each iteration returns a CSS property/value pair as a std::pair
 	struct CSSInlineStyleIterator {
-		DataChunk fChunk;
-		DataChunk fCurrentName{};
-		DataChunk fCurrentValue{};
+		ByteSpan fChunk;
+		ByteSpan fCurrentName{};
+		ByteSpan fCurrentValue{};
 
-		CSSInlineStyleIterator(const DataChunk& inChunk) : fChunk(inChunk) {}
+		CSSInlineStyleIterator(const ByteSpan& inChunk) : fChunk(inChunk) {}
 
 
 		bool next()
@@ -92,7 +92,7 @@ namespace svg2b2d
 			if (fChunk)
 			{
 
-				DataChunk nextValue = chunk_token(fChunk, svg2b2d::charset(";"));
+				ByteSpan nextValue = chunk_token(fChunk, svg2b2d::charset(";"));
 				fCurrentName = chunk_trim(chunk_token(nextValue, svg2b2d::charset(":")), wspChars);
 				fCurrentValue = chunk_trim(nextValue, wspChars);
 
@@ -115,11 +115,11 @@ namespace svg2b2d
 		
 	struct CSSSelectorIterator
 	{
-		DataChunk fSource{};
-		DataChunk fMark{};
+		ByteSpan fSource{};
+		ByteSpan fMark{};
 		CSSSelector fCurrentItem{};
 		
-		CSSSelectorIterator(const DataChunk& inChunk)
+		CSSSelectorIterator(const ByteSpan& inChunk)
 		{
 			fSource = inChunk;
 			fMark = inChunk;
@@ -142,7 +142,7 @@ namespace svg2b2d
 			// Look for the next selector, which should be a string
 			// followed by a '{', with optional whitespace in between
 			// terminated with a '}'
-			DataChunk selectorChunk = chunk_token(fSource, svg2b2d::charset("{"));
+			ByteSpan selectorChunk = chunk_token(fSource, svg2b2d::charset("{"));
 			selectorChunk = chunk_trim(selectorChunk, wspChars);
 			
 			if (selectorChunk)
@@ -151,7 +151,7 @@ namespace svg2b2d
 				// look for the closing '}', and then trim the whitespace
 				std::string selectorName(selectorChunk.fStart, selectorChunk.fEnd);
 				
-				DataChunk content = chunk_token(fSource, svg2b2d::charset("}"));
+				ByteSpan content = chunk_token(fSource, svg2b2d::charset("}"));
 				if (content)
 				{
 					fCurrentItem = CSSSelector(selectorName, content);

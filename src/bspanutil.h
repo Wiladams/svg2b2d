@@ -1,12 +1,10 @@
 #pragma once
 
-#include "bspan.h"
-
 
 //	Herein you will find various objects and functions which are
 //	useful while scanning, tokenizing, parsing streams of text.
 
-
+#include "bspan.h"
 #include <bitset>
 
 
@@ -35,27 +33,11 @@ namespace svg2b2d {
 	struct charset {
 		std::bitset<256> bits;
 
-#ifdef __cplusplus
-	extern "C" {
-#endif
-	static INLINE charset charset_create_from_cstr(const char achar);
-	static INLINE charset charset_create_from_char(const char* chars);
-	static INLINE bool charset_contains(const charset& a, const uint8_t idx);
-	static INLINE void charset_add_char(charset& a, const char b);
-	static INLINE void charset_add_cstr(charset& a, const char* b);
-
-#ifdef __cplusplus
-	}
-#endif
-
-#ifdef __cplusplus
-	extern "C" {
-#endif
 		explicit charset(const char achar)
 		{
 			addChar(achar);
 		}
-		
+
 		charset(const char* chars)
 		{
 			addChars(chars);
@@ -66,7 +48,7 @@ namespace svg2b2d {
 			bits.set(achar);
 			return *this;
 		}
-		
+
 		charset& addChars(const char* chars)
 		{
 			size_t len = strlen(chars);
@@ -75,29 +57,29 @@ namespace svg2b2d {
 
 			return *this;
 		}
-		
+
 		charset& operator+=(const char achar)
 		{
 			return addChar(achar);
 		}
-		
+
 		charset& operator+=(const char* chars)
 		{
 			return addChars(chars);
 		}
-		
+
 		charset operator+(const char achar) const
 		{
 			charset result(*this);
 			return result.addChar(achar);
 		}
-		
+
 		charset operator+(const char* chars) const
 		{
 			charset result(*this);
 			return result.addChars(chars);
 		}
-		
+
 		// This one makes us look like an array
 		bool operator [](const size_t idx) const
 		{
@@ -114,11 +96,15 @@ namespace svg2b2d {
 		{
 			return bits[idx];
 		}
-#ifdef __cplusplus
-	}
-#endif
+		
 	};
+	
 
+	static INLINE charset charset_create_from_cstr(const char achar);
+	static INLINE charset charset_create_from_char(const char* chars);
+	static INLINE bool charset_contains(const charset& a, const uint8_t idx);
+	static INLINE void charset_add_char(charset& a, const char b);
+	static INLINE void charset_add_cstr(charset& a, const char* b);
 
 }
 
@@ -126,9 +112,7 @@ namespace svg2b2d
 {
 	static charset wspChars(" \r\n\t\f\v");		// a set of typical whitespace chars
 	
-#ifdef __cplusplus
-	extern "C" {
-#endif
+
 		
 		static INLINE size_t copy_to_cstr(char* str, size_t len, const ByteSpan& a) noexcept;
 		static INLINE ByteSpan chunk_ltrim(const ByteSpan& a, const charset& skippable) noexcept;
@@ -151,18 +135,13 @@ namespace svg2b2d
 		// Number Conversions
 		static INLINE double chunk_to_double(ByteSpan& inChunk) noexcept;
 		
-#ifdef __cplusplus
-	}
-#endif
 }
 
 
 
-namespace svg2b2d 
+namespace svg2b2d
 {
-#ifdef __cplusplus
-	extern "C" {
-#endif
+
 
 		
 		static INLINE size_t copy_to_cstr(char* str, size_t len, const ByteSpan& a) noexcept
@@ -425,13 +404,9 @@ namespace svg2b2d
 		}
 		
 		
-#ifdef __cplusplus
-	}
-#endif
-		
 }
 
-// a ciyoke if utility routines to help with debugging
+
 namespace svg2b2d {
 	void writeChunk(const ByteSpan& chunk)
 	{
@@ -458,6 +433,55 @@ namespace svg2b2d {
 	}
 }
 
+
+namespace svg2b2d {
+
+	// simple type parsing
+	static INLINE int64_t toInteger(const ByteSpan& inChunk);
+	static INLINE double toNumber(const ByteSpan& inChunk);
+	static INLINE std::string toString(const ByteSpan& inChunk);
+
+
+	// Utility, for viewbox, points, etc
+	static INLINE double nextNumber(ByteSpan& inChunk, const charset& delims);
+
+
+	// return a number next in a list of numbers
+	static INLINE double nextNumber(ByteSpan& inChunk, const charset& delims)
+	{
+		// First, trim the front of whitespace
+		inChunk = chunk_ltrim(inChunk, wspChars);
+
+		// now go for the next number separated by delimiters
+		ByteSpan numChunk;
+		numChunk = chunk_token(inChunk, delims);
+		double anum = chunk_to_double(numChunk);
+
+		return anum;
+	}
+
+	static INLINE int64_t toInteger(const ByteSpan& inChunk)
+	{
+		ByteSpan s = inChunk;
+		return chunk_to_i64(s);
+	}
+
+	// toNumber
+	// a floating point number
+	static INLINE double toNumber(const ByteSpan& inChunk)
+	{
+		ByteSpan s = inChunk;
+		return chunk_to_double(s);
+	}
+
+	static INLINE std::string toString(const ByteSpan& inChunk)
+	{
+		return std::string(inChunk.fStart, inChunk.fEnd);
+	}
+
+}
+
+
 /*
 	
 	static INLINE void skipOverCharset(ByteSpan& dc, const charset& cs)
@@ -471,5 +495,21 @@ namespace svg2b2d {
 		while (dc && !cs.contains(*dc))
 			++dc;
 	}
+	
+	    // Turn a chunk into a vector of chunks, splitting on the delimiters
+    // BUGBUG - should consider the option of empty chunks, especially at the boundaries
+    static INLINE std::vector<svg2b2d::ByteSpan> chunk_split(const svg2b2d::ByteSpan& inChunk, const charset& delims, bool wantEmpties = false) noexcept
+    {
+        std::vector<ByteSpan> result;
+        ByteSpan s = inChunk;
+        while (s)
+        {
+            ByteSpan token = chunk_token(s, delims);
+            //if (size(token) > 0)
+            result.push_back(token);
+        }
+
+        return result;
+    }
 	
 */

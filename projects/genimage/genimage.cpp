@@ -4,7 +4,7 @@
 #include "mmap.h"
 #include "svg.h"
 
-using namespace memmap;
+using namespace filemapper;
 using namespace svg2b2d;
 
 int main(int argc, char** argv)
@@ -26,8 +26,8 @@ int main(int argc, char** argv)
     BLImage outImage(1000, 1000, BL_FORMAT_PRGB32);
 
     // parse the svg, and draw it into the image
-    parseSVG(mapped->getSpan(),outImage);
-
+    parseSVG(mapped->data(), mapped->size(), outImage);
+    
     // save the image to a png file
     const char *output = argc > 2 ? argv[2] : "output.png";
     outImage.writeToFile(output);
