@@ -3,3 +3,5 @@
 *.ipch
 *.log
 *.recipe
+projects/genimage/output.png
+projects/genimage/floppy.png
