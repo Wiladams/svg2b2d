@@ -1,0 +1,5 @@
+
+*.db
+*.ipch
+*.log
+*.recipe
