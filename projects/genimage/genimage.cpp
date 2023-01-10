@@ -23,7 +23,7 @@ int main(int argc, char** argv)
         return 0;
 
     // Create the BLImage we're going to draw into
-    BLImage outImage(1000, 1000, BL_FORMAT_PRGB32);
+    BLImage outImage(420, 340, BL_FORMAT_PRGB32);
 
     // parse the svg, and draw it into the image
     parseSVG(mapped->data(), mapped->size(), outImage);

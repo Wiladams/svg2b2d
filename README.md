@@ -1,6 +1,9 @@
 # svg2b2d
 SVG parser, using blend2d as backend renderer
 
+
+<img src="images/Accordion.png" alt="Accordion" width=340/></br>
+
 look at projects/genimage to see how easy it is to construct a BLImage from an SVG
 
 The main interface is in svg.h

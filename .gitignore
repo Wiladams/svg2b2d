@@ -15,3 +15,10 @@ projects/.vs/projects/FileContentIndex/32dbd669-4ed6-4bde-aa57-01e474077556.vsid
 *.vsidx
 projects/.vs/projects/FileContentIndex/36f2bf2c-e10a-4d89-b846-fe001faa18c2.vsidx
 projects/.vs/projects/v17/.suo
+*.tlog
+*.ilk
+projects/.vs/projects/v17/.suo
+*.obj
+*.idb
+*.pdb
+*.exe
