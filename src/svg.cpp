@@ -14,7 +14,7 @@
 
 bool parseSVG(const void* bytes, const size_t sz, BLImage& outImage)
 {
-    svg2b2d::ByteSpan inChunk = svg2b2d::chunk_from_data_size(bytes, sz);
+    svg2b2d::ByteSpan inChunk(bytes, sz);   // = svg2b2d::chunk_from_data_size(bytes, sz);
     
     // Create a new document
     svg2b2d::SVGDocument doc;

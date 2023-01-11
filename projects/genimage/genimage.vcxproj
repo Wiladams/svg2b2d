@@ -153,10 +153,12 @@
     <ClInclude Include="..\..\src\bspanutil.h" />
     <ClInclude Include="..\..\src\cssscanner.h" />
     <ClInclude Include="..\..\src\definitions.h" />
+    <ClInclude Include="..\..\src\pathbuilder.h" />
     <ClInclude Include="..\..\src\svg.h" />
     <ClInclude Include="..\..\src\svgcolors.h" />
     <ClInclude Include="..\..\src\svgshapes.h" />
     <ClInclude Include="..\..\src\svgtypes.h" />
+    <ClInclude Include="..\..\src\svgutils.h" />
     <ClInclude Include="..\..\src\xmlscan.h" />
     <ClInclude Include="..\mmap.h" />
   </ItemGroup>

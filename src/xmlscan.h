@@ -199,6 +199,12 @@ namespace svg2b2d {
     // We do NOT scan the content of the element here, that happens
     // outside this routine.  We only deal with what comes up the the closing '>'
     //
+        void setTagName(const ByteSpan& inChunk)
+        {
+            fXmlName.reset(inChunk);
+            fName = toString(fXmlName.name());
+        }
+        
         void scanTagName()
         {
             ByteSpan s = fData;
@@ -227,8 +233,8 @@ namespace svg2b2d {
                 s++;
 
             tagName.fEnd = s.fStart;
-            fName = std::string(tagName.fStart, tagName.fEnd);
-			fXmlName.reset(tagName);
+            setTagName(tagName);
+
 
             fData = s;
         }
@@ -304,7 +310,7 @@ namespace svg2b2d {
                 }
 
                 // Store only well formed attributes
-                ByteSpan attrValue = make_chunk(beginattrValue, endattrValue);
+                ByteSpan attrValue = { beginattrValue, endattrValue };
                 //printf("    VALUE :");
                 //printChunk(attrValue);
 
@@ -397,6 +403,9 @@ namespace svg2b2d {
             return elementChunk;
         }
         
+        // readDoctype
+        // BUGBUG - we are only reading the doctype with an internal subset
+        // NOT the external subset
         ByteSpan readDoctype()
         {
             ByteSpan elementChunk = fSource;

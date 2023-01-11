@@ -3,7 +3,7 @@
 
 #include "svgtypes.h"
 #include "base64.h"
-
+#include "pathbuilder.h"
 
 #include <string>
 #include <array>
@@ -21,9 +21,7 @@ namespace svg2b2d {
 
 	// stroke-dasharray
 	// stroke-dashoffset
-	// fill-rule
 	// clip-rule
-	// opacity
 	// filter
 	// clip-path
 	// mask
@@ -261,8 +259,8 @@ namespace svg2b2d {
 			if (!href)
 				return;
 
-			fX = toDimension(elem.getAttribute("x")).calculatePixels();
-			fY = toDimension(elem.getAttribute("y")).calculatePixels();
+			fX = parseDimension(elem.getAttribute("x")).calculatePixels();
+			fY = parseDimension(elem.getAttribute("y")).calculatePixels();
 
 			// Use the href to lookup the node in the tree
 			// have to wait for setRoot() to be called before we can do the lookup
@@ -321,10 +319,10 @@ namespace svg2b2d {
 		{
 			SVGPathBasedShape::loadSelfFromXml(elem);
 			
-			fGeometry.x0 = toDimension(elem.getAttribute("x1")).calculatePixels();
-			fGeometry.y0 = toDimension(elem.getAttribute("y1")).calculatePixels();
-			fGeometry.x1 = toDimension(elem.getAttribute("x2")).calculatePixels();
-			fGeometry.y1 = toDimension(elem.getAttribute("y2")).calculatePixels();
+			fGeometry.x0 = parseDimension(elem.getAttribute("x1")).calculatePixels();
+			fGeometry.y0 = parseDimension(elem.getAttribute("y1")).calculatePixels();
+			fGeometry.x1 = parseDimension(elem.getAttribute("x2")).calculatePixels();
+			fGeometry.y1 = parseDimension(elem.getAttribute("y2")).calculatePixels();
 
 			fPath.addLine(fGeometry);
 		}
@@ -351,15 +349,15 @@ namespace svg2b2d {
 		{
 			SVGPathBasedShape::loadSelfFromXml(elem);
 			
-			fGeometry.x = toDimension(elem.getAttribute("x")).calculatePixels();
-			fGeometry.y = toDimension(elem.getAttribute("y")).calculatePixels();
-			fGeometry.w = toDimension(elem.getAttribute("width")).calculatePixels();
-			fGeometry.h = toDimension(elem.getAttribute("height")).calculatePixels();
+			fGeometry.x = parseDimension(elem.getAttribute("x")).calculatePixels();
+			fGeometry.y = parseDimension(elem.getAttribute("y")).calculatePixels();
+			fGeometry.w = parseDimension(elem.getAttribute("width")).calculatePixels();
+			fGeometry.h = parseDimension(elem.getAttribute("height")).calculatePixels();
 
 			if (elem.getAttribute("rx"))
 			{
-				fGeometry.rx = toDimension(elem.getAttribute("rx")).calculatePixels();
-				fGeometry.ry = toDimension(elem.getAttribute("ry")).calculatePixels();
+				fGeometry.rx = parseDimension(elem.getAttribute("rx")).calculatePixels();
+				fGeometry.ry = parseDimension(elem.getAttribute("ry")).calculatePixels();
 				fPath.addRoundRect(fGeometry);
 			}
 			else
@@ -388,9 +386,9 @@ namespace svg2b2d {
 		{
 			SVGPathBasedShape::loadSelfFromXml(elem);
 			
-			fCircle.cx = toDimension(elem.getAttribute("cx")).calculatePixels();
-			fCircle.cy = toDimension(elem.getAttribute("cy")).calculatePixels();
-			fCircle.r = toDimension(elem.getAttribute("r")).calculatePixels();
+			fCircle.cx = parseDimension(elem.getAttribute("cx")).calculatePixels();
+			fCircle.cy = parseDimension(elem.getAttribute("cy")).calculatePixels();
+			fCircle.r = parseDimension(elem.getAttribute("r")).calculatePixels();
 
 			fPath.addCircle(fCircle);
 		}
@@ -415,10 +413,10 @@ namespace svg2b2d {
 		{
 			SVGPathBasedShape::loadSelfFromXml(elem);
 			
-			fGeometry.cx = toDimension(elem.getAttribute("cx")).calculatePixels();
-			fGeometry.cy = toDimension(elem.getAttribute("cy")).calculatePixels();
-			fGeometry.rx = toDimension(elem.getAttribute("rx")).calculatePixels();
-			fGeometry.ry = toDimension(elem.getAttribute("ry")).calculatePixels();
+			fGeometry.cx = parseDimension(elem.getAttribute("cx")).calculatePixels();
+			fGeometry.cy = parseDimension(elem.getAttribute("cy")).calculatePixels();
+			fGeometry.rx = parseDimension(elem.getAttribute("rx")).calculatePixels();
+			fGeometry.ry = parseDimension(elem.getAttribute("ry")).calculatePixels();
 
 			fPath.addEllipse(fGeometry);
 		}
@@ -443,12 +441,12 @@ namespace svg2b2d {
 			SVGPathBasedShape::loadSelfFromXml(elem);
 			
 			auto points = elem.getAttribute("points");
-			auto pts = toPoints(points);
+			auto pts = parsePoints(points);
 
-			fPath.moveTo(pts[0].fX, pts[0].fY);
+			fPath.moveTo(pts[0].x, pts[0].y);
 			for (int i = 1; i < pts.size(); i++)
 			{
-				fPath.lineTo(pts[i].fX, pts[i].fY);
+				fPath.lineTo(pts[i].x, pts[i].y);
 			}
 
 			
@@ -474,12 +472,12 @@ namespace svg2b2d {
 			SVGPathBasedShape::loadSelfFromXml(elem);
 			
 			auto points = elem.getAttribute("points");
-			auto pts = toPoints(points);
+			auto pts = parsePoints(points);
 
-			fPath.moveTo(pts[0].fX, pts[0].fY);
+			fPath.moveTo(pts[0]);
 			for (int i = 1; i < pts.size(); i++)
 			{
-				fPath.lineTo(pts[i].fX, pts[i].fY);
+				fPath.lineTo(pts[i]);
 			}
 			fPath.close();
 			
@@ -549,7 +547,7 @@ namespace svg2b2d {
 			{
 				// allocate some memory to decode into
 				uint8_t* outBuff{ new uint8_t[chunk_size(value)]{} };
-				ByteSpan outChunk = chunk_from_data_size(outBuff, chunk_size(value));
+				ByteSpan outChunk(outBuff, value.size());	//  = chunk_from_data_size(outBuff, chunk_size(value));
 
 				auto outData = b64tobin(value, outChunk);
 
@@ -616,11 +614,11 @@ namespace svg2b2d {
 			SVGShape::loadSelfFromXml(elem);
 
 			// Specify the size at which things are displayed
-			fWidth = toDimension(elem.getAttribute("width")).calculatePixels(96);
-			fHeight = toDimension(elem.getAttribute("height")).calculatePixels(96);
+			fWidth = parseDimension(elem.getAttribute("width")).calculatePixels(96);
+			fHeight = parseDimension(elem.getAttribute("height")).calculatePixels(96);
 
-			fX = toDimension(elem.getAttribute("x")).calculatePixels(96);
-			fY = toDimension(elem.getAttribute("y")).calculatePixels(96);
+			fX = parseDimension(elem.getAttribute("x")).calculatePixels(96);
+			fY = parseDimension(elem.getAttribute("y")).calculatePixels(96);
 			
 			// docode and load the image
 			//fImage.create(fWidth, fHeight, BL_FORMAT_PRGB32);
@@ -848,10 +846,10 @@ namespace svg2b2d {
 		{
 			SVGCompoundNode::loadSelfFromXml(elem);
 
-			x = toDimension(elem.getAttribute("x")).calculatePixels(96);
-			y = toDimension(elem.getAttribute("y")).calculatePixels(96);
-			dy = toDimension(elem.getAttribute("dy")).calculatePixels(96);
-			//fFontSize = toDimension(elem.getAttribute("font-size")).calculatePixels(96);
+			x = parseDimension(elem.getAttribute("x")).calculatePixels(96);
+			y = parseDimension(elem.getAttribute("y")).calculatePixels(96);
+			dy = parseDimension(elem.getAttribute("dy")).calculatePixels(96);
+			//fFontSize = parseDimension(elem.getAttribute("font-size")).calculatePixels(96);
 		}
 
 		void loadContentNode(const XmlElement& elem) override
@@ -941,8 +939,8 @@ namespace svg2b2d {
 			SVGCompoundNode::loadSelfFromXml(elem);
 
 			fPattern.setExtendMode(BL_EXTEND_MODE_PAD);
-			fWidth = toDimension(elem.getAttribute("width")).calculatePixels(1,0,96);
-			fHeight = toDimension(elem.getAttribute("height")).calculatePixels(1,0,96);
+			fWidth = parseDimension(elem.getAttribute("width")).calculatePixels(1,0,96);
+			fHeight = parseDimension(elem.getAttribute("height")).calculatePixels(1,0,96);
 
 			if (elem.getAttribute("patternTransform"))
 			{
@@ -1133,10 +1131,10 @@ namespace svg2b2d {
 			// and we want that to happen before we set our own stuff.
 			SVGGradient::loadSelfFromXml(elem);
 			
-			double x1 = toDimension(elem.getAttribute("x1")).calculatePixels();
-			double y1 = toDimension(elem.getAttribute("y1")).calculatePixels();
-			double x2 = toDimension(elem.getAttribute("x2")).calculatePixels();
-			double y2 = toDimension(elem.getAttribute("y2")).calculatePixels();
+			double x1 = parseDimension(elem.getAttribute("x1")).calculatePixels();
+			double y1 = parseDimension(elem.getAttribute("y1")).calculatePixels();
+			double x2 = parseDimension(elem.getAttribute("x2")).calculatePixels();
+			double y2 = parseDimension(elem.getAttribute("y2")).calculatePixels();
 			
 
 			// gradientUnits needs to be read in here
@@ -1176,9 +1174,9 @@ namespace svg2b2d {
 			
 			if (elem.getAttribute("cx") && elem.getAttribute("cy") && elem.getAttribute("r"))
 			{
-				double cx = toDimension(elem.getAttribute("cx")).calculatePixels(96);
-				double cy = toDimension(elem.getAttribute("cy")).calculatePixels(96);
-				double r = toDimension(elem.getAttribute("r")).calculatePixels(96);
+				double cx = parseDimension(elem.getAttribute("cx")).calculatePixels(96);
+				double cy = parseDimension(elem.getAttribute("cy")).calculatePixels(96);
+				double r = parseDimension(elem.getAttribute("r")).calculatePixels(96);
 
 				gradientValues.x0 = cx;
 				gradientValues.y0 = cy;
@@ -1189,10 +1187,10 @@ namespace svg2b2d {
 
 
 			if (elem.getAttribute("fx"))
-				gradientValues.x1 = toDimension(elem.getAttribute("fx")).calculatePixels(96);
+				gradientValues.x1 = parseDimension(elem.getAttribute("fx")).calculatePixels(96);
 				
 			if (elem.getAttribute("fy"))
-				gradientValues.y1 = toDimension(elem.getAttribute("fy")).calculatePixels(96);
+				gradientValues.y1 = parseDimension(elem.getAttribute("fy")).calculatePixels(96);
 			
 			fGradient.setValues(gradientValues);
 			
@@ -1399,8 +1397,8 @@ namespace svg2b2d {
 	
 	struct SVGRootNode : public SVGGroup
 	{
-		float fWidth{};
-		float fHeight{};
+		double fWidth{};
+		double fHeight{};
 		SVGViewbox fViewbox{};
 		bool fPreserveAspectRatio = false;
 
@@ -1417,8 +1415,8 @@ namespace svg2b2d {
 			SVGGroup::loadSelfFromXml(elem);
 			
 			// width
-			fWidth = toDimension(elem.getAttribute("width")).calculatePixels(96);
-			fHeight = toDimension(elem.getAttribute("height")).calculatePixels(96);
+			fWidth = parseDimension(elem.getAttribute("width")).calculatePixels(96);
+			fHeight = parseDimension(elem.getAttribute("height")).calculatePixels(96);
 
 			// viewbox
 			fViewbox = SVGViewbox::createFromXml(root(), elem, "viewBox");

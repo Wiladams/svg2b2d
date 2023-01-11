@@ -100,11 +100,11 @@ namespace svg2b2d {
 	};
 	
 
-	static inline charset charset_create_from_cstr(const char achar);
-	static inline charset charset_create_from_char(const char* chars);
-	static inline bool charset_contains(const charset& a, const uint8_t idx);
-	static inline void charset_add_char(charset& a, const char b);
-	static inline void charset_add_cstr(charset& a, const char* b);
+	//static inline charset charset_create_from_cstr(const char achar);
+	//static inline charset charset_create_from_char(const char* chars);
+	//static inline bool charset_contains(const charset& a, const uint8_t idx);
+	//static inline void charset_add_char(charset& a, const char b);
+	//static inline void charset_add_cstr(charset& a, const char* b);
 
 }
 
@@ -113,7 +113,7 @@ namespace svg2b2d
 	static charset wspChars(" \r\n\t\f\v");		// a set of typical whitespace chars
 	
 
-		
+
 		static inline size_t copy_to_cstr(char* str, size_t len, const ByteSpan& a) noexcept;
 		static inline ByteSpan chunk_ltrim(const ByteSpan& a, const charset& skippable) noexcept;
 		static inline ByteSpan chunk_rtrim(const ByteSpan& a, const charset& skippable) noexcept;
@@ -329,9 +329,81 @@ namespace svg2b2d
 			return v;
 		}
 		
+		// Parse a number which may have units after it
+//   1.2em
+// -1.0E2em
+// 2.34ex
+// -2.34e3M10,20
+// 
+// By the end of this routine, the numchunk represents the range of the 
+// captured number.
+// 
+// The returned chunk represents what comes next, and can be used
+// to continue scanning the original inChunk
+//
+// Note:  We assume here that the inChunk is already positioned at the start
+// of a number (including +/- sign), with no leading whitespace
+
+		static ByteSpan scanNumber(const ByteSpan& inChunk, ByteSpan& numchunk)
+		{
+			static charset digitChars("0123456789");                   // only digits
+
+			ByteSpan s = inChunk;
+			numchunk = inChunk;
+			numchunk.fEnd = inChunk.fStart;
+
+
+			// sign
+			if (*s == '-' || *s == '+') {
+				s++;
+				numchunk.fEnd = s.fStart;
+			}
+
+			// integer part
+			while (s && digitChars[*s]) {
+				s++;
+				numchunk.fEnd = s.fStart;
+			}
+
+			if (*s == '.') {
+				// decimal point
+				s++;
+				numchunk.fEnd = s.fStart;
+
+				// fraction part
+				while (s && digitChars[*s]) {
+					s++;
+					numchunk.fEnd = s.fStart;
+				}
+			}
+
+			// exponent
+			// but it could be units (em, ex)
+			if ((*s == 'e' || *s == 'E') && (s[1] != 'm' && s[1] != 'x'))
+			{
+				s++;
+				numchunk.fEnd = s.fStart;
+
+				// Might be a sign
+				if (*s == '-' || *s == '+') {
+					s++;
+					numchunk.fEnd = s.fStart;
+				}
+
+				// Get any remaining digits
+				while (s && digitChars[*s]) {
+					s++;
+					numchunk.fEnd = s.fStart;
+				}
+			}
+
+			return s;
+		}
+		
 		// parse floating point number
 		// includes sign, exponent, and decimal point
 		// The input chunk is altered, with the fStart pointer moved to the end of the number
+		//std::from_chars((const char*)numChunk.fStart, (const char*)numChunk.fEnd, afloat);
 		static inline double chunk_to_double(ByteSpan& s) noexcept
 		{
 			static charset digitChars("0123456789");

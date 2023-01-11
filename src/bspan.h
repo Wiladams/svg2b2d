@@ -1,9 +1,5 @@
 #pragma once
 
-
-//#include "definitions.h"
-
-
 #include <cstdint>
 #include <cstring>
 #include <iterator>	// for std::data(), std::size()
@@ -31,42 +27,56 @@ namespace svg2b2d {
 		const unsigned char* fStart;
 		const unsigned char* fEnd;
 
-
-
-
-		ByteSpan(const uint8_t* start, const uint8_t* end) : fStart(start), fEnd(end) {}
+		// Constructors
 		ByteSpan() : fStart(nullptr), fEnd(nullptr) {}
+		ByteSpan(const unsigned char* start, const unsigned char* end) : fStart(start), fEnd(end) {}
+		explicit ByteSpan(const void* data, size_t sz) :fStart((const unsigned char*)data), fEnd((const unsigned char*)fStart + sz) {}
 
 
-		inline uint8_t& operator[](size_t i);				// Array access
-		inline const uint8_t& operator[](size_t i) const;	// Array access
 
-		inline uint8_t& operator*();				// get current byte value
-		inline const uint8_t& operator*() const;	// get current byte value
+		// Type conversions
+		explicit operator bool() const { return (fEnd - fStart) > 0; };
+		
+		
+		// Array access
+		unsigned char& operator[](size_t i) { return ((unsigned char*)fStart)[i]; }
+		const unsigned char& operator[](size_t i) const { return ((unsigned char*)fStart)[i]; }
 
-		inline ByteSpan& operator+= (size_t a);	// advance by the specified amount
+		// get current value from fStart, like a 'peek' operation
+		unsigned char& operator*() { static unsigned char zero = 0;  if (fStart < fEnd) return *(unsigned char*)fStart; return  zero; }
+		const uint8_t& operator*() const { static unsigned char zero = 0;  if (fStart < fEnd) return *(unsigned char*)fStart; return  zero; }
+		
+		ByteSpan& operator+= (size_t n) { 
+			if (n > size())
+				n = size();
+			fStart += n;
 
-		inline ByteSpan& operator++();				// prefix ++y
-		inline ByteSpan& operator++(int i);		// postfix y++
-		inline ByteSpan& operator--(int i);		// postfix y--
+			return *this;
+		}
 
-		inline explicit operator bool() const { return (fEnd - fStart) > 0; };
 
+		ByteSpan& operator++() { return operator+=(1); }			// prefix notation ++y
+		ByteSpan& operator++(int i) { return operator+=(1); }       // postfix notation y++
+		//ByteSpan& operator--() { return operator-=(1); }       // postfix notation y++
+		//ByteSpan& operator--(int i) { return operator-=(1); }       // postfix notation y++
+
+
+
+		// setting up for a range-based for loop
+		const unsigned char* data() noexcept { return (unsigned char *)fStart; }
+		const unsigned char* begin() noexcept { return fStart; }
+		const unsigned char* end() noexcept { return fEnd; }
+		size_t size()  const noexcept { return fEnd - fStart; }
+		
+		void setAll(unsigned char c) noexcept {memset((uint8_t*)fStart,c, size());}
 	};
 
 
 
-
-
-	static inline ByteSpan make_chunk(const void* starting, const void* ending) noexcept;
-
-	static inline ByteSpan chunk_from_data_size(const void* data, size_t sz) noexcept;
+	//static inline ByteSpan chunk_from_data_size(const void* data, size_t sz) noexcept;
 	static inline ByteSpan chunk_from_cstr(const char* str) noexcept;
 
-	static inline const uint8_t* data(ByteSpan& dc) noexcept;
-	static inline const uint8_t* begin(ByteSpan& dc) noexcept;
-	static inline const uint8_t* end(ByteSpan& dc) noexcept;
-	//static inline size_t size(const ByteSpan& dc) noexcept;
+
 	static inline size_t chunk_size(const ByteSpan& dc) noexcept;
 	static inline bool chunk_empty(const ByteSpan& dc) noexcept;
 	static inline size_t copy(ByteSpan& a, const ByteSpan& b) noexcept;
@@ -78,9 +88,9 @@ namespace svg2b2d {
 	static inline bool chunk_is_equal_cstr(const ByteSpan& a, const char* s) noexcept;
 
 	// Some utility functions for common operations
-	static inline void chunk_clear(ByteSpan& dc) noexcept;
+
 	static inline void chunk_truncate(ByteSpan& dc) noexcept;
-	static inline ByteSpan& chunk_skip(ByteSpan& dc, int n) noexcept;
+	static inline ByteSpan& chunk_skip(ByteSpan& dc, ptrdiff_t n) noexcept;
 	static inline ByteSpan& chunk_skip_to_end(ByteSpan& dc) noexcept;
 
 
@@ -105,34 +115,33 @@ namespace svg2b2d {
 
 
 		// ByteSpan routines
-		static inline ByteSpan make_chunk(const void* starting, const void* ending) noexcept { return { (const uint8_t*)starting, (const uint8_t*)ending }; }
 
-		static inline ByteSpan chunk_from_data_size(const void* data, size_t sz) noexcept { return { (uint8_t*)data, (uint8_t*)data + sz }; }
-		static inline ByteSpan chunk_from_cstr(const char* data) noexcept { return { (uint8_t*)data, (uint8_t*)data + strlen(data) }; }
+		//static inline ByteSpan chunk_from_data_size(const void* data, size_t sz) noexcept { return { (uint8_t*)data, (uint8_t*)data + sz }; }
+		static inline ByteSpan chunk_from_cstr(const char* data) noexcept { return ByteSpan{ (uint8_t*)data, (uint8_t*)data + strlen(data) }; }
 
-		static inline const uint8_t* begin(ByteSpan& dc) noexcept { return dc.fStart; }
-		static inline const uint8_t* end(ByteSpan& dc) noexcept { return dc.fEnd; }
 
-		static inline const uint8_t* data(ByteSpan& dc)  noexcept { return dc.fStart; }
-		//static inline size_t size(const ByteSpan& dc)  noexcept { return dc.fEnd - dc.fStart; }
-		static inline size_t chunk_size(const ByteSpan& dc)  noexcept { return dc.fEnd - dc.fStart; }
+
+		//static inline const uint8_t* data(ByteSpan& dc)  noexcept { return dc.fStart; }
+
+
+		static inline size_t chunk_size(const ByteSpan& a) noexcept { return a.size(); }
 		static inline bool chunk_empty(const ByteSpan& dc)  noexcept { return dc.fEnd == dc.fStart; }
 		static inline size_t copy(ByteSpan& a, const ByteSpan& b) noexcept
 		{
-			size_t maxBytes = chunk_size(a) < chunk_size(b) ? chunk_size(a) : chunk_size(b);
+			size_t maxBytes = a.size() < b.size() ? a.size() : b.size();
 			memcpy((uint8_t*)a.fStart, b.fStart, maxBytes);
 			return maxBytes;
 		}
 
 		static inline int compare(const ByteSpan& a, const ByteSpan& b) noexcept
 		{
-			size_t maxBytes = chunk_size(a) < chunk_size(b) ? chunk_size(a) : chunk_size(b);
+			size_t maxBytes = a.size() < b.size() ? a.size() : b.size();
 			return memcmp(a.fStart, b.fStart, maxBytes);
 		}
 
 		static inline int comparen(const ByteSpan& a, const ByteSpan& b, int n) noexcept
 		{
-			size_t maxBytes = chunk_size(a) < chunk_size(b) ? chunk_size(a) : chunk_size(b);
+			size_t maxBytes = a.size() < b.size() ? a.size() : b.size();
 			if (maxBytes > n)
 				maxBytes = n;
 			return memcmp(a.fStart, b.fStart, maxBytes);
@@ -140,39 +149,35 @@ namespace svg2b2d {
 
 		static inline int comparen_cstr(const ByteSpan& a, const char* b, int n) noexcept
 		{
-			size_t maxBytes = chunk_size(a) < n ? chunk_size(a) : n;
+			size_t maxBytes = a.size() < n ? a.size() : n;
 			return memcmp(a.fStart, b, maxBytes);
 		}
 
 		static inline bool chunk_is_equal(const ByteSpan& a, const ByteSpan& b) noexcept
 		{
-			if (chunk_size(a) != chunk_size(b))
+			if (a.size() != b.size())
 				return false;
-			return memcmp(a.fStart, b.fStart, chunk_size(a)) == 0;
+			return memcmp(a.fStart, b.fStart, a.size()) == 0;
 		}
 
 		static inline bool chunk_is_equal_cstr(const ByteSpan& a, const char* cstr) noexcept
 		{
 			size_t len = strlen(cstr);
-			if (chunk_size(a) != len)
+			if (a.size() != len)
 				return false;
 			return memcmp(a.fStart, cstr, len) == 0;
 		}
 
-		static inline void chunk_clear(ByteSpan& dc) noexcept
-		{
-			memset((uint8_t*)dc.fStart, 0, chunk_size(dc));
-		}
 
 		static inline void chunk_truncate(ByteSpan& dc) noexcept
 		{
 			dc.fEnd = dc.fStart;
 		}
 
-		static inline ByteSpan& chunk_skip(ByteSpan& dc, int n) noexcept
+		static inline ByteSpan& chunk_skip(ByteSpan& dc, ptrdiff_t n) noexcept
 		{
-			if (n > chunk_size(dc))
-				n = chunk_size(dc);
+			if (n > dc.size())
+				n = dc.size();
 			dc.fStart += n;
 
 			return dc;
@@ -187,63 +192,58 @@ namespace svg2b2d {
 
 
 
-	inline uint8_t& ByteSpan::operator[](size_t i) { return ((uint8_t*)fStart)[i]; }
-	inline const uint8_t& ByteSpan::operator[](size_t i) const { return ((uint8_t*)fStart)[i]; }
 
-	inline uint8_t& ByteSpan::operator*() { static uint8_t zero = 0;  if (fStart < fEnd) return *(uint8_t*)fStart; return  zero; }
-	inline const uint8_t& ByteSpan::operator*() const { static uint8_t zero = 0;  if (fStart < fEnd) return *(uint8_t*)fStart; return  zero; }
 
-	inline ByteSpan& ByteSpan::operator++() { return chunk_skip(*this, 1); }			// prefix notation ++y
-	inline ByteSpan& ByteSpan::operator++(int i) { return chunk_skip(*this, 1); }       // postfix notation y++
-	inline ByteSpan& ByteSpan::operator--(int i) { return chunk_skip(*this, -1); }       // postfix notation y++
 
-	inline ByteSpan& ByteSpan::operator+= (size_t n) { return chunk_skip(*this, n); }
 
-	//inline explicit ByteSpan::operator bool() const { return (fEnd - fStart) > 0; }
+
+
+
+
 
 	static inline bool operator==(const ByteSpan& a, const ByteSpan& b) noexcept
 	{
-		if (chunk_size(a) != chunk_size(b))
+		if (a.size() != b.size())
 			return false;
-		return memcmp(a.fStart, b.fStart, chunk_size(a)) == 0;
+		return memcmp(a.fStart, b.fStart, a.size()) == 0;
 	}
 
 	static inline bool operator==(const ByteSpan& a, const char* b) noexcept
 	{
 		size_t len = strlen(b);
-		if (chunk_size(a) != len)
+		if (a.size() != len)
 			return false;
 		return memcmp(a.fStart, b, len) == 0;
 	}
 
 	static inline bool operator!=(const ByteSpan& a, const ByteSpan& b) noexcept
 	{
-		if (chunk_size(a) != chunk_size(b))
+		if (a.size() != b.size())
 			return true;
-		return memcmp(a.fStart, b.fStart, chunk_size(a)) != 0;
+		return memcmp(a.fStart, b.fStart, a.size()) != 0;
 	}
 
 	static inline bool operator<(const ByteSpan& a, const ByteSpan& b) noexcept
 	{
-		size_t maxBytes = chunk_size(a) < chunk_size(b) ? chunk_size(a) : chunk_size(b);
+		size_t maxBytes = a.size() < b.size() ? a.size() : b.size();
 		return memcmp(a.fStart, b.fStart, maxBytes) < 0;
 	}
 
 	static inline bool operator>(const ByteSpan& a, const ByteSpan& b) noexcept
 	{
-		size_t maxBytes = chunk_size(a) < chunk_size(b) ? chunk_size(a) : chunk_size(b);
+		size_t maxBytes = a.size() < b.size() ? a.size() : b.size();
 		return memcmp(a.fStart, b.fStart, maxBytes) > 0;
 	}
 
 	static inline bool operator<=(const ByteSpan& a, const ByteSpan& b) noexcept
 	{
-		size_t maxBytes = chunk_size(a) < chunk_size(b) ? chunk_size(a) : chunk_size(b);
+		size_t maxBytes = a.size() < b.size() ? a.size() : b.size();
 		return memcmp(a.fStart, b.fStart, maxBytes) <= 0;
 	}
 
 	static inline bool operator>=(const ByteSpan& a, const ByteSpan& b) noexcept
 	{
-		size_t maxBytes = chunk_size(a) < chunk_size(b) ? chunk_size(a) : chunk_size(b);
+		size_t maxBytes = a.size() < b.size() ? a.size() : b.size();
 		return memcmp(a.fStart, b.fStart, maxBytes) >= 0;
 	}
 
