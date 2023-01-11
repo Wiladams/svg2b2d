@@ -9,9 +9,6 @@
 
 namespace svg
 {
-    using namespace maths;
-
-
     // Database of SVG colors
     // BUGBUG - it might be better if these used float instead of byte values
     // Then they can be converted to various forms as needed

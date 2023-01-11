@@ -1,9 +1,7 @@
 #pragma once
 
 
-#include "xmlscan.h"
 #include "svgtypes.h"
-#include "cssscanner.h"
 #include "base64.h"
 
 
@@ -11,15 +9,6 @@
 #include <array>
 #include <functional>
 
-// Common Shapes
-// Line
-// Rect
-// Circle
-// Ellipse
-// Polyline
-// Polygon
-// Path
-// Text
 
 // Shape Common Attributes
 // id

@@ -151,10 +151,13 @@
     <ClInclude Include="..\..\src\blend2d.h" />
     <ClInclude Include="..\..\src\bspan.h" />
     <ClInclude Include="..\..\src\bspanutil.h" />
-    <ClInclude Include="..\..\src\drawable.h" />
+    <ClInclude Include="..\..\src\cssscanner.h" />
+    <ClInclude Include="..\..\src\definitions.h" />
     <ClInclude Include="..\..\src\svg.h" />
-    <ClInclude Include="..\..\src\svgscanner.h" />
+    <ClInclude Include="..\..\src\svgcolors.h" />
     <ClInclude Include="..\..\src\svgshapes.h" />
+    <ClInclude Include="..\..\src\svgtypes.h" />
+    <ClInclude Include="..\..\src\xmlscan.h" />
     <ClInclude Include="..\mmap.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

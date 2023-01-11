@@ -100,11 +100,11 @@ namespace svg2b2d {
 	};
 	
 
-	static INLINE charset charset_create_from_cstr(const char achar);
-	static INLINE charset charset_create_from_char(const char* chars);
-	static INLINE bool charset_contains(const charset& a, const uint8_t idx);
-	static INLINE void charset_add_char(charset& a, const char b);
-	static INLINE void charset_add_cstr(charset& a, const char* b);
+	static inline charset charset_create_from_cstr(const char achar);
+	static inline charset charset_create_from_char(const char* chars);
+	static inline bool charset_contains(const charset& a, const uint8_t idx);
+	static inline void charset_add_char(charset& a, const char b);
+	static inline void charset_add_cstr(charset& a, const char* b);
 
 }
 
@@ -114,26 +114,26 @@ namespace svg2b2d
 	
 
 		
-		static INLINE size_t copy_to_cstr(char* str, size_t len, const ByteSpan& a) noexcept;
-		static INLINE ByteSpan chunk_ltrim(const ByteSpan& a, const charset& skippable) noexcept;
-		static INLINE ByteSpan chunk_rtrim(const ByteSpan& a, const charset& skippable) noexcept;
-		static INLINE ByteSpan chunk_trim(const ByteSpan& a, const charset& skippable) noexcept;
-		static INLINE ByteSpan chunk_skip_wsp(const ByteSpan& a) noexcept;
+		static inline size_t copy_to_cstr(char* str, size_t len, const ByteSpan& a) noexcept;
+		static inline ByteSpan chunk_ltrim(const ByteSpan& a, const charset& skippable) noexcept;
+		static inline ByteSpan chunk_rtrim(const ByteSpan& a, const charset& skippable) noexcept;
+		static inline ByteSpan chunk_trim(const ByteSpan& a, const charset& skippable) noexcept;
+		static inline ByteSpan chunk_skip_wsp(const ByteSpan& a) noexcept;
 		
-		static INLINE ByteSpan chunk_subchunk(const ByteSpan& a, const size_t start, const size_t sz) noexcept;
-		static INLINE bool chunk_starts_with(const ByteSpan& a, const ByteSpan& b) noexcept;
-		static INLINE bool chunk_starts_with_char(const ByteSpan& a, const uint8_t b) noexcept;
-		static INLINE bool chunk_starts_with_cstr(const ByteSpan& a, const char* b) noexcept;
+		static inline ByteSpan chunk_subchunk(const ByteSpan& a, const size_t start, const size_t sz) noexcept;
+		static inline bool chunk_starts_with(const ByteSpan& a, const ByteSpan& b) noexcept;
+		static inline bool chunk_starts_with_char(const ByteSpan& a, const uint8_t b) noexcept;
+		static inline bool chunk_starts_with_cstr(const ByteSpan& a, const char* b) noexcept;
 		
-		static INLINE bool chunk_ends_with(const ByteSpan& a, const ByteSpan& b) noexcept;
-		static INLINE bool chunk_ends_with_char(const ByteSpan& a, const uint8_t b) noexcept;
-		static INLINE bool chunk_ends_with_cstr(const ByteSpan& a, const char* b) noexcept;
+		static inline bool chunk_ends_with(const ByteSpan& a, const ByteSpan& b) noexcept;
+		static inline bool chunk_ends_with_char(const ByteSpan& a, const uint8_t b) noexcept;
+		static inline bool chunk_ends_with_cstr(const ByteSpan& a, const char* b) noexcept;
 		
-		static INLINE ByteSpan chunk_token(ByteSpan& a, const charset& delims) noexcept;
-		static INLINE ByteSpan chunk_find_char(const ByteSpan& a, char c) noexcept;
+		static inline ByteSpan chunk_token(ByteSpan& a, const charset& delims) noexcept;
+		static inline ByteSpan chunk_find_char(const ByteSpan& a, char c) noexcept;
 
 		// Number Conversions
-		static INLINE double chunk_to_double(ByteSpan& inChunk) noexcept;
+		static inline double chunk_to_double(ByteSpan& inChunk) noexcept;
 		
 }
 
@@ -144,7 +144,7 @@ namespace svg2b2d
 
 
 		
-		static INLINE size_t copy_to_cstr(char* str, size_t len, const ByteSpan& a) noexcept
+		static inline size_t copy_to_cstr(char* str, size_t len, const ByteSpan& a) noexcept
 		{
 			size_t maxBytes = chunk_size(a) < len ? chunk_size(a) : len;
 			memcpy(str, a.fStart, maxBytes);
@@ -154,7 +154,7 @@ namespace svg2b2d
 		}
 		
 		// Trim the left side of skippable characters
-		static INLINE ByteSpan chunk_ltrim(const ByteSpan& a, const charset& skippable) noexcept
+		static inline ByteSpan chunk_ltrim(const ByteSpan& a, const charset& skippable) noexcept
 		{
 			const uint8_t* start = a.fStart;
 			const uint8_t* end = a.fEnd;
@@ -164,7 +164,7 @@ namespace svg2b2d
 		}
 
 		// trim the right side of skippable characters
-		static INLINE ByteSpan chunk_rtrim(const ByteSpan& a, const charset& skippable) noexcept
+		static inline ByteSpan chunk_rtrim(const ByteSpan& a, const charset& skippable) noexcept
 		{
 			const uint8_t* start = a.fStart;
 			const uint8_t* end = a.fEnd;
@@ -175,7 +175,7 @@ namespace svg2b2d
 		}
 
 		// trim the left and right side of skippable characters
-		static INLINE ByteSpan chunk_trim(const ByteSpan& a, const charset& skippable) noexcept
+		static inline ByteSpan chunk_trim(const ByteSpan& a, const charset& skippable) noexcept
 		{
 			const uint8_t* start = a.fStart;
 			const uint8_t* end = a.fEnd;
@@ -186,7 +186,7 @@ namespace svg2b2d
 			return { start, end };
 		}
 		
-		static INLINE ByteSpan chunk_skip_wsp(const ByteSpan& a) noexcept
+		static inline ByteSpan chunk_skip_wsp(const ByteSpan& a) noexcept
 		{
 			const uint8_t* start = a.fStart;
 			const uint8_t* end = a.fEnd;
@@ -195,7 +195,7 @@ namespace svg2b2d
 			return { start, end };
 		}
 		
-		static INLINE ByteSpan chunk_subchunk(const ByteSpan& a, const size_t startAt, const size_t sz) noexcept
+		static inline ByteSpan chunk_subchunk(const ByteSpan& a, const size_t startAt, const size_t sz) noexcept
 		{
 			const uint8_t* start = a.fStart;
 			const uint8_t* end = a.fEnd;
@@ -213,32 +213,32 @@ namespace svg2b2d
 			return { start, end };
 		}
 		
-		static INLINE bool chunk_starts_with(const ByteSpan& a, const ByteSpan& b) noexcept
+		static inline bool chunk_starts_with(const ByteSpan& a, const ByteSpan& b) noexcept
 		{
 			return chunk_is_equal(chunk_subchunk(a, 0, chunk_size(b)), b);
 		}
 		
-		static INLINE bool chunk_starts_with_char(const ByteSpan& a, const uint8_t b) noexcept
+		static inline bool chunk_starts_with_char(const ByteSpan& a, const uint8_t b) noexcept
 		{
 			return chunk_size(a) > 0 && a.fStart[0] == b;
 		}
 
-		static INLINE bool chunk_starts_with_cstr(const ByteSpan& a, const char* b) noexcept
+		static inline bool chunk_starts_with_cstr(const ByteSpan& a, const char* b) noexcept
 		{
 			return chunk_starts_with(a, chunk_from_cstr(b));
 		}
 		
-		static INLINE bool chunk_ends_with(const ByteSpan& a, const ByteSpan& b) noexcept
+		static inline bool chunk_ends_with(const ByteSpan& a, const ByteSpan& b) noexcept
 		{
 			return chunk_is_equal(chunk_subchunk(a, chunk_size(a)- chunk_size(b), chunk_size(b)), b);
 		}
 		
-		static INLINE bool chunk_ends_with_char(const ByteSpan& a, const uint8_t b) noexcept
+		static inline bool chunk_ends_with_char(const ByteSpan& a, const uint8_t b) noexcept
 		{
 			return chunk_size(a) > 0 && a.fEnd[-1] == b;
 		}
 		
-		static INLINE bool chunk_ends_with_cstr(const ByteSpan& a, const char* b) noexcept
+		static inline bool chunk_ends_with_cstr(const ByteSpan& a, const char* b) noexcept
 		{
 			return chunk_ends_with(a, chunk_from_cstr(b));
 		}
@@ -250,7 +250,7 @@ namespace svg2b2d
 		// If delimeter NOT found
 		// returns the entire input chunk
 		// and 'a' is set to an empty chunk
-		static INLINE ByteSpan chunk_token(ByteSpan& a, const charset& delims) noexcept
+		static inline ByteSpan chunk_token(ByteSpan& a, const charset& delims) noexcept
 		{
 			const uint8_t* start = a.fStart;
 			const uint8_t* end = a.fEnd;
@@ -275,7 +275,7 @@ namespace svg2b2d
 		// find the first instance of a specified character
 		// return the chunk preceding the found character
 		// or or the whole chunk of the character is not found
-		static INLINE ByteSpan chunk_find_char(const ByteSpan& a, char c) noexcept
+		static inline ByteSpan chunk_find_char(const ByteSpan& a, char c) noexcept
 		{
 			const uint8_t* start = a.fStart;
 			const uint8_t* end = a.fEnd;
@@ -289,7 +289,7 @@ namespace svg2b2d
 		// it into a 64-bit unsigned integer
 		// Stop processing when the first non-digit is seen, 
 		// or the end of the chunk
-		static INLINE uint64_t chunk_to_u64(ByteSpan& s)
+		static inline uint64_t chunk_to_u64(ByteSpan& s)
 		{
 			static charset digitChars("0123456789");
 			
@@ -304,7 +304,7 @@ namespace svg2b2d
 			return v;
 		}
 		
-		static INLINE int64_t chunk_to_i64(ByteSpan& s)
+		static inline int64_t chunk_to_i64(ByteSpan& s)
 		{
 			static charset digitChars("0123456789");
 
@@ -332,7 +332,7 @@ namespace svg2b2d
 		// parse floating point number
 		// includes sign, exponent, and decimal point
 		// The input chunk is altered, with the fStart pointer moved to the end of the number
-		static INLINE double chunk_to_double(ByteSpan& s) noexcept
+		static inline double chunk_to_double(ByteSpan& s) noexcept
 		{
 			static charset digitChars("0123456789");
 			
@@ -437,17 +437,17 @@ namespace svg2b2d {
 namespace svg2b2d {
 
 	// simple type parsing
-	static INLINE int64_t toInteger(const ByteSpan& inChunk);
-	static INLINE double toNumber(const ByteSpan& inChunk);
-	static INLINE std::string toString(const ByteSpan& inChunk);
+	static inline int64_t toInteger(const ByteSpan& inChunk);
+	static inline double toNumber(const ByteSpan& inChunk);
+	static inline std::string toString(const ByteSpan& inChunk);
 
 
 	// Utility, for viewbox, points, etc
-	static INLINE double nextNumber(ByteSpan& inChunk, const charset& delims);
+	static inline double nextNumber(ByteSpan& inChunk, const charset& delims);
 
 
 	// return a number next in a list of numbers
-	static INLINE double nextNumber(ByteSpan& inChunk, const charset& delims)
+	static inline double nextNumber(ByteSpan& inChunk, const charset& delims)
 	{
 		// First, trim the front of whitespace
 		inChunk = chunk_ltrim(inChunk, wspChars);
@@ -460,7 +460,7 @@ namespace svg2b2d {
 		return anum;
 	}
 
-	static INLINE int64_t toInteger(const ByteSpan& inChunk)
+	static inline int64_t toInteger(const ByteSpan& inChunk)
 	{
 		ByteSpan s = inChunk;
 		return chunk_to_i64(s);
@@ -468,13 +468,13 @@ namespace svg2b2d {
 
 	// toNumber
 	// a floating point number
-	static INLINE double toNumber(const ByteSpan& inChunk)
+	static inline double toNumber(const ByteSpan& inChunk)
 	{
 		ByteSpan s = inChunk;
 		return chunk_to_double(s);
 	}
 
-	static INLINE std::string toString(const ByteSpan& inChunk)
+	static inline std::string toString(const ByteSpan& inChunk)
 	{
 		return std::string(inChunk.fStart, inChunk.fEnd);
 	}
@@ -484,13 +484,13 @@ namespace svg2b2d {
 
 /*
 	
-	static INLINE void skipOverCharset(ByteSpan& dc, const charset& cs)
+	static inline void skipOverCharset(ByteSpan& dc, const charset& cs)
 	{
 		while (dc && cs.contains(*dc))
 			dc++;
 	}
 
-	static INLINE void skipUntilCharset(ByteSpan& dc, const charset& cs)
+	static inline void skipUntilCharset(ByteSpan& dc, const charset& cs)
 	{
 		while (dc && !cs.contains(*dc))
 			++dc;
@@ -498,7 +498,7 @@ namespace svg2b2d {
 	
 	    // Turn a chunk into a vector of chunks, splitting on the delimiters
     // BUGBUG - should consider the option of empty chunks, especially at the boundaries
-    static INLINE std::vector<svg2b2d::ByteSpan> chunk_split(const svg2b2d::ByteSpan& inChunk, const charset& delims, bool wantEmpties = false) noexcept
+    static inline std::vector<svg2b2d::ByteSpan> chunk_split(const svg2b2d::ByteSpan& inChunk, const charset& delims, bool wantEmpties = false) noexcept
     {
         std::vector<ByteSpan> result;
         ByteSpan s = inChunk;

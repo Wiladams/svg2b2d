@@ -5,7 +5,7 @@
 #include "svg.h"
 
 using namespace filemapper;
-using namespace svg2b2d;
+
 
 int main(int argc, char** argv)
 {
