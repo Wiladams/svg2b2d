@@ -1394,13 +1394,93 @@ namespace svg2b2d {
 	};
 
 
-	
+	struct SVGPortal : public SVGVisualProperty
+	{
+		double fWidth{100};		
+		double fHeight{100};
+
+		
+		SVGViewbox fViewbox{};
+		bool fPreserveAspectRatio{ false };
+
+		SVGPortal() = default;
+		SVGPortal(IMapSVGNodes* root) : SVGVisualProperty(root) {}
+		
+
+		SVGPortal& operator=(const SVGPortal& rhs)
+		{
+			SVGVisualProperty::operator=(rhs);
+			fViewbox = rhs.fViewbox;
+			fWidth = rhs.fWidth;
+			fHeight = rhs.fHeight;
+			fPreserveAspectRatio = rhs.fPreserveAspectRatio;
+
+			return *this;
+		}
+		
+		double width() { return fWidth; }
+		double height() { return fHeight; }
+		
+		void drawSelf(BLContext& ctx)
+		{
+			if (fViewbox.isSet())
+			{
+				ctx.scale(fWidth / fViewbox.width(), fHeight / fViewbox.height());
+				ctx.translate(-fViewbox.x(), -fViewbox.y());
+			}
+		}
+		
+		void loadSelfFromXml(const XmlElement& elem) override
+		{
+			SVGVisualProperty::loadSelfFromXml(elem);
+			
+			// Load the viewbox, if it exists
+			fViewbox = SVGViewbox::createFromXml(root(), elem, "viewBox");
+			if (fViewbox.isSet())
+			{
+				// Start the width and height to be the same as the viewbox
+				fWidth = fViewbox.width();
+				fHeight = fViewbox.height();
+				
+				fPreserveAspectRatio = elem.getAttribute("preserveAspectRatio") == "xMidYMid meet";
+			}
+			
+			// Dimensions
+			if (elem.getAttribute("width") && elem.getAttribute("height"))
+			{
+				double rangeX = 100;
+				double rangeY = 100;
+				
+				if (fViewbox.isSet())
+				{
+					rangeX = fViewbox.width();
+					rangeY = fViewbox.height();
+				}
+
+				fWidth = parseDimension(elem.getAttribute("width")).calculatePixels(rangeX, 0, 96);
+				fHeight = parseDimension(elem.getAttribute("height")).calculatePixels(rangeY, 0, 96);
+			}
+
+			
+			fPreserveAspectRatio = elem.getAttribute("preserveAspectRatio") == "xMidYMid meet";
+
+			set(true);
+		}
+		
+
+		
+		static std::shared_ptr<SVGPortal> createFromXml(IMapSVGNodes* root, const XmlElement& elem, const std::string &name)
+		{
+			auto node = std::make_shared<SVGPortal>(root);
+			node->loadFromXmlElement(elem);
+
+			return node;
+		}
+	};
+
 	struct SVGRootNode : public SVGGroup
 	{
-		double fWidth{};
-		double fHeight{};
-		SVGViewbox fViewbox{};
-		bool fPreserveAspectRatio = false;
+		std::shared_ptr<SVGPortal> fPortal;
 
 		SVGRootNode() :SVGGroup(nullptr) { setRoot(this); }
 		SVGRootNode(IMapSVGNodes *root)
@@ -1409,20 +1489,25 @@ namespace svg2b2d {
 			setRoot(this);
 		}
 		
+		double width()
+		{
+			if (fPortal != nullptr)
+				return fPortal->width();
+			return 100;
+		}
+
+		double height()
+		{
+			if (fPortal != nullptr)
+				return fPortal->height();
+			return 100;
+		}
 
 		void loadSelfFromXml(const XmlElement& elem) override
 		{
 			SVGGroup::loadSelfFromXml(elem);
 			
-			// width
-			fWidth = parseDimension(elem.getAttribute("width")).calculatePixels(96);
-			fHeight = parseDimension(elem.getAttribute("height")).calculatePixels(96);
-
-			// viewbox
-			fViewbox = SVGViewbox::createFromXml(root(), elem, "viewBox");
-
-			// preserveAspectRatio
-
+			fPortal = SVGPortal::createFromXml(root(), elem, "portal");
 		}
 
 		static std::shared_ptr<SVGRootNode> createFromIterator(XmlElementIterator& iter)
@@ -1437,14 +1522,15 @@ namespace svg2b2d {
 		{
 			ctx.save();
 
-			//ctx.scale(0.3, 0.3);
+
 			
 			// Start with default state
 			//ctx.strokeJoin(SVG_JOIN_ROUND);
 			//ctx.ellipseMode(ELLIPSEMODE::CENTER);
-			ctx.setStrokeStyle(BLRgba32(0));
+
 			ctx.setFillStyle(BLRgba32(0, 0, 0));
 			
+			ctx.setStrokeStyle(BLRgba32(0));
 			ctx.setStrokeWidth(1.0);
 			//ctx.textSize(16);
 			
@@ -1473,11 +1559,23 @@ namespace svg2b2d {
 	{
 
 		// All the drawable nodes within this document
+		std::shared_ptr<SVGRootNode> fRootNode{};
 		std::vector<std::shared_ptr<IDrawable>> fShapes{};
 		BLBox fExtent{};
 
 		SVGDocument() = default;
 
+		double width() const { 
+			if (fRootNode == nullptr)
+				return 100;
+			return fRootNode->width();
+        }
+
+		double height() const {
+			if (fRootNode == nullptr)
+				return 100;
+			return fRootNode->height();
+		}
 
 		void draw(BLContext& ctx) override
 		{
@@ -1520,11 +1618,13 @@ namespace svg2b2d {
 
 				if (elem.isStart() && (elem.name() == "svg"))
 				{
-					auto node = SVGRootNode::createFromIterator(iter);
-					if (node != nullptr)
-					{
-						addNode(node);
-					}
+                    // There should be only one root node in a document, so we should 
+                    // break here, but, curiosity...
+                    fRootNode = SVGRootNode::createFromIterator(iter);
+                    if (fRootNode != nullptr)
+                    {
+                        addNode(fRootNode);
+                    }
 				}
 
 				iter++;
