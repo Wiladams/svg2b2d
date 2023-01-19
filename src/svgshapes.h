@@ -150,20 +150,20 @@ namespace svg2b2d {
 		}
 		
 		// Contains styling attributes
-		void applyAttributes(BLContext& ctx)
+		void applyAttributes(IRender& ctx)
 		{
 			for (auto& prop : fVisualProperties) {
 				prop.second->draw(ctx);
 			}
 		}
 		
-		virtual void drawSelf(BLContext& ctx)
+		virtual void drawSelf(IRender& ctx)
 		{
 			;
 
 		}
 		
-		void draw(BLContext& ctx) override
+		void draw(IRender& ctx) override
 		{
 			ctx.save();
 			
@@ -230,7 +230,7 @@ namespace svg2b2d {
 
 		}
 
-		void drawSelf(BLContext& ctx) override
+		void drawSelf(IRender& ctx) override
 		{
 			if (fWrappedNode == nullptr)
 				return;
@@ -293,7 +293,7 @@ namespace svg2b2d {
 		SVGPathBasedShape(IMapSVGNodes* iMap) :SVGShape(iMap) {}
 		
 		
-		void drawSelf(BLContext &ctx) override
+		void drawSelf(IRender &ctx) override
 		{
 			ctx.fillPath(fPath);
 			ctx.strokePath(fPath);
@@ -598,7 +598,7 @@ namespace svg2b2d {
 			return fVar;
 		}
 		
-		void drawSelf(BLContext& ctx)
+		void drawSelf(IRender& ctx)
 		{
 			if (fImage.empty())
 				return;
@@ -700,7 +700,7 @@ namespace svg2b2d {
 		}
 		
 		
-		void drawSelf(BLContext& ctx)
+		void drawSelf(IRender& ctx)
 		{
 			for (auto& node : fNodes) {
 				node->draw(ctx);
@@ -834,7 +834,7 @@ namespace svg2b2d {
 		SVGTextNode() :SVGCompoundNode() {}
 		SVGTextNode(IMapSVGNodes* root) :SVGCompoundNode(root) {}
 
-		void drawSelf(BLContext& ctx) override
+		void drawSelf(IRender& ctx) override
 		{
 			//ctx.textFont("Calibri");	// BUGBUG - hardcoded, should go away when property supported
 			//ctx.text(fText.c_str(), x, y+dy);
@@ -927,7 +927,7 @@ namespace svg2b2d {
 			return fVar;
 		}
 		
-		void drawSelf(BLContext& ctx) override
+		void drawSelf(IRender& ctx) override
 		{
 			// This should not be called
 			// a pattern is used as a fill for other visuals
@@ -1421,7 +1421,7 @@ namespace svg2b2d {
 		double width() { return fWidth; }
 		double height() { return fHeight; }
 		
-		void drawSelf(BLContext& ctx)
+		void drawSelf(IRender& ctx)
 		{
 			if (fViewbox.isSet())
 			{
@@ -1518,7 +1518,7 @@ namespace svg2b2d {
 			return node;
 		}
 
-		void draw(BLContext& ctx) override
+		void draw(IRender& ctx) override
 		{
 			ctx.save();
 
@@ -1577,7 +1577,7 @@ namespace svg2b2d {
 			return fRootNode->height();
 		}
 
-		void draw(BLContext& ctx) override
+		void draw(IRender& ctx) override
 		{
 			for (auto& shape : fShapes)
 			{

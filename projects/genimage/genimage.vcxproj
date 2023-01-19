@@ -151,9 +151,13 @@
     <ClInclude Include="..\..\src\blend2d.h" />
     <ClInclude Include="..\..\src\bspan.h" />
     <ClInclude Include="..\..\src\bspanutil.h" />
+    <ClInclude Include="..\..\src\charset.h" />
     <ClInclude Include="..\..\src\cssscanner.h" />
     <ClInclude Include="..\..\src\definitions.h" />
+    <ClInclude Include="..\..\src\irender.h" />
     <ClInclude Include="..\..\src\pathbuilder.h" />
+    <ClInclude Include="..\..\src\pathsegment.h" />
+    <ClInclude Include="..\..\src\pathutil.h" />
     <ClInclude Include="..\..\src\svg.h" />
     <ClInclude Include="..\..\src\svgcolors.h" />
     <ClInclude Include="..\..\src\svgshapes.h" />

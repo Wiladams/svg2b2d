@@ -23,9 +23,9 @@ bool parseSVG(const void* bytes, const size_t sz, BLImage& outImage)
     doc.readFromData(inChunk);
     
     
-    // Draw the document into a BLContext
+    // Draw the document into a IRender
     outImage.create(doc.width(), doc.height(), BL_FORMAT_PRGB32);
-    BLContext ctx(outImage);
+    SVGRenderer ctx(outImage);
     doc.draw(ctx);
     ctx.end();
     

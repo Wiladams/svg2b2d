@@ -3,6 +3,7 @@
 
 #include "svgutils.h"
 #include "svgcolors.h"
+#include "irender.h"
 
 #include <memory>
 #include <vector>
@@ -13,16 +14,7 @@
 namespace svg2b2d {
 	struct IMapSVGNodes;    // forward declaration
     
-    // IDrawable
-    // Base interface for anything that might have an effect
-    // on a drawing context.
-    // 
-    struct IDrawable
-    {
-        virtual ~IDrawable() {}
 
-        virtual void draw(BLContext& ctx) = 0;
-    };
     
     struct SVGObject : public IDrawable
     {
@@ -67,7 +59,7 @@ namespace svg2b2d {
             return fVar;
         }
         
-        void draw(BLContext& ctx) override
+        void draw(IRender& ctx) override
         {
             ;// draw the object
         }
@@ -146,12 +138,12 @@ namespace svg2b2d {
         }
         
         // Apply propert to the context conditionally
-        virtual void drawSelf(BLContext& ctx)
+        virtual void drawSelf(IRender& ctx)
         {
             ;
         }
 
-        void draw(BLContext& ctx) override
+        void draw(IRender& ctx) override
         {
             if (isSet())
                 drawSelf(ctx);
@@ -206,7 +198,7 @@ namespace svg2b2d {
 		SVGOpacity(IMapSVGNodes* iMap):SVGVisualProperty(iMap){}
 
 
-        void drawSelf(BLContext& ctx)
+        void drawSelf(IRender& ctx)
         {
 			SVGVisualProperty::drawSelf(ctx);
 			ctx.setFillAlpha(fValue);
@@ -254,7 +246,7 @@ namespace svg2b2d {
             return *this;
         }
 
-        void drawSelf(BLContext& ctx)
+        void drawSelf(IRender& ctx)
         {
             //ctx.textSize(fValue);
         }
@@ -307,7 +299,7 @@ enum class ALIGNMENT : unsigned
             return *this;
         }
 
-        void drawSelf(BLContext& ctx)
+        void drawSelf(IRender& ctx)
         {
             // BUGBUG, need to calculate alignment
             //ctx.textAlign(fValue, ALIGNMENT::BASELINE);
@@ -357,7 +349,7 @@ enum class ALIGNMENT : unsigned
             return *this;
         }
 
-        void drawSelf(BLContext& ctx)
+        void drawSelf(IRender& ctx)
         {
 			// BUGBUG, need to calculate alignment
             //ctx.textAlign(fValue, ALIGNMENT::BASELINE);
@@ -582,7 +574,7 @@ namespace svg2b2d {
 
         // Need to distinguish which function gets called
         // BUGBUG
-        void drawSelf(BLContext& ctx)
+        void drawSelf(IRender& ctx)
         {
             switch (fPaintFor)
             {
@@ -780,7 +772,7 @@ namespace svg2b2d {
             return *this;
         }
 
-        void drawSelf(BLContext& ctx)
+        void drawSelf(IRender& ctx)
         {
 			ctx.setFillRule(fValue);
         }
@@ -837,7 +829,7 @@ namespace svg2b2d {
 			return *this;
 		}
 
-		void drawSelf(BLContext& ctx)
+		void drawSelf(IRender& ctx)
 		{
 			ctx.setStrokeWidth(fWidth);
 		}
@@ -884,7 +876,7 @@ namespace svg2b2d {
 			return *this;
         }
 
-		void drawSelf(BLContext& ctx)
+		void drawSelf(IRender& ctx)
 		{
 			ctx.setStrokeMiterLimit(fMiterLimit);
 		}
@@ -937,7 +929,7 @@ namespace svg2b2d {
 			return *this;
 		}
 
-		void drawSelf(BLContext& ctx)
+		void drawSelf(IRender& ctx)
 		{
             ctx.setStrokeCaps(fLineCap);
 		}
@@ -993,7 +985,7 @@ namespace svg2b2d {
 			return *this;
         }
         
-        void drawSelf(BLContext& ctx)
+        void drawSelf(IRender& ctx)
         {
 			ctx.setStrokeJoin(fLineJoin);
         }
@@ -1386,7 +1378,7 @@ namespace svg2b2d
 
 		}
 
-        void drawSelf(BLContext& ctx) override
+        void drawSelf(IRender& ctx) override
         {
 			ctx.transform(fTransform);
         }

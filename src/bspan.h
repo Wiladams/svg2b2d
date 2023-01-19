@@ -30,6 +30,7 @@ namespace svg2b2d {
 		// Constructors
 		ByteSpan() : fStart(nullptr), fEnd(nullptr) {}
 		ByteSpan(const unsigned char* start, const unsigned char* end) : fStart(start), fEnd(end) {}
+		ByteSpan(const char *cstr) : fStart((const unsigned char*)cstr), fEnd((const unsigned char*)cstr + strlen(cstr)) {}
 		explicit ByteSpan(const void* data, size_t sz) :fStart((const unsigned char*)data), fEnd((const unsigned char*)fStart + sz) {}
 
 
