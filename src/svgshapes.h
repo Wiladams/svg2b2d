@@ -4,6 +4,7 @@
 #include "svgtypes.h"
 #include "base64.h"
 #include "pathbuilder.h"
+#include "pathutil.h"
 
 #include <string>
 #include <array>

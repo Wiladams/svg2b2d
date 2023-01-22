@@ -172,7 +172,7 @@ namespace svg2b2d
 	// Given an input chunk
 	// find the first instance of a specified character
 	// return the chunk preceding the found character
-	// or or the whole chunk of the character is not found
+	// or a blank chunk if the character is not found
 	static inline ByteSpan chunk_find_char(const ByteSpan& a, char c) noexcept
 	{
 		const uint8_t* start = a.fStart;

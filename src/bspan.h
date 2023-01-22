@@ -58,15 +58,11 @@ namespace svg2b2d {
 
 		ByteSpan& operator++() { return operator+=(1); }			// prefix notation ++y
 		ByteSpan& operator++(int i) { return operator+=(1); }       // postfix notation y++
-		//ByteSpan& operator--() { return operator-=(1); }       // postfix notation y++
-		//ByteSpan& operator--(int i) { return operator-=(1); }       // postfix notation y++
-
-
-
+		
 		// setting up for a range-based for loop
-		const unsigned char* data() noexcept { return (unsigned char *)fStart; }
-		const unsigned char* begin() noexcept { return fStart; }
-		const unsigned char* end() noexcept { return fEnd; }
+		const unsigned char* data() const noexcept { return (unsigned char *)fStart; }
+		const unsigned char* begin() const noexcept { return fStart; }
+		const unsigned char* end() const noexcept { return fEnd; }
 		size_t size()  const noexcept { return fEnd - fStart; }
 		
 		void setAll(unsigned char c) noexcept {memset((uint8_t*)fStart,c, size());}

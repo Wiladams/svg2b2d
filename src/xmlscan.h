@@ -17,7 +17,7 @@
 // using a 'pull model'.
 // 
 // One key aspect of the design is that it operates on a span of memory.  It does
-// no deal with files, or streams, or anything high level like that, just a ByteSpan.
+// not deal with files, or streams, or anything high level like that, just a ByteSpan.
 // It does not alter the span, just reads bytes from it, and returns spans in 
 // responses.
 //
@@ -28,12 +28,13 @@
 //  kind - content, self-closing, start-tag, end-tag, comment, processing-instruction
 //  name - the name of the element, if opening or closing tag
 //  attributes - a map of attribute names to attribute values.  Values are still in raw form
-//  data - the raw data of the element.  The starting name has been removed, to be turned into the name
+//  data - the raw data of the element.  
+// The starting name has been removed, to be turned into the name
 // 
 // The XmlElementIterator is used to iterate over the elements in a chunk of memory.
 //
 // References:
-// https://dvcs.w3.org/hg/microxml/raw-file/tip/spec/microxml.html#:~:text=MicroXML%20is%20a%20Unicode-based%20textual%20format%20for%20general-purpose,in%20this%20format%20is%20called%20a%20MicroXML%20document.
+// https://dvcs.w3.org/hg/microxml/raw-file/tip/spec/microxml.html
 // https://www.w3.org/TR/REC-xml/
 //
 
@@ -78,6 +79,15 @@ namespace svg2b2d {
             return *this;
         }
         
+		// Implement for std::map, and ordering in general
+		bool operator < (const XmlName& rhs) const
+		{
+			size_t maxnsbytes = std::min(fNamespace.size(), rhs.fNamespace.size());
+			size_t maxnamebytes = std::min(fName.size(), rhs.fName.size());
+            
+			return (memcmp(fNamespace.begin(), rhs.fNamespace.begin(), maxnsbytes)<=0)  && (memcmp(fName.begin(), rhs.fName.begin(), maxnamebytes) < 0);
+		}
+        
         // Allows setting the name after it's been created
         // BUGBUG - maybe an operator= would be better?
         XmlName& reset(const ByteSpan& inChunk)
@@ -97,7 +107,7 @@ namespace svg2b2d {
 	};
     
     // Representation of an xml element
-    // The xml scanner will generate these
+    // The xml iterator will generate these
     struct XmlElement
     {
     private:
@@ -157,7 +167,7 @@ namespace svg2b2d {
 		void setName(const std::string& name) { fName = name; }
         
         int kind() const { return fElementKind; }
-		void setKind(int kind) { fElementKind = kind; }
+		void kind(int kind) { fElementKind = kind; }
         
         const ByteSpan& data() const { return fData; }
 
@@ -276,43 +286,39 @@ namespace svg2b2d {
                 }
 
                 // Find end of the attrib name.
-                static charset equalChars("=");
-                auto attrNameChunk = chunk_token(s, equalChars);
-                attrNameChunk = chunk_trim(attrNameChunk, wspChars);
+                //static charset equalChars("=");
+                auto attrNameChunk = chunk_token(s, "=");
+                attrNameChunk = chunk_trim(attrNameChunk, wspChars);    // trim whitespace on both ends
 
                 std::string attrName = std::string(attrNameChunk.fStart, attrNameChunk.fEnd);
-
-                //printf("     ATTR : '%s'", attrName.c_str());
-
 
                 // Skip stuff past '=' until the beginning of the value.
                 while (s && (*s != '\"') && (*s != '\''))
                     s++;
 
+                // If we've reached end of span, bail out
                 if (!s)
                     break;
 
                 // capture the quote character
+                // Store value and find the end of it.
                 quote = *s;
 
-                // Store value and find the end of it.
-                s++;
-                beginattrValue = (uint8_t*)s.fStart;
+				s++;    // move past the quote character
+                beginattrValue = (uint8_t*)s.fStart;    // Mark the beginning of the attribute content
 
-                // Skip until end of the value.
+                // Skip until we find the matching closing quote
                 while (s && *s != quote)
                     s++;
 
                 if (s)
                 {
-                    endattrValue = (uint8_t*)s.fStart;
+                    endattrValue = (uint8_t*)s.fStart;  // Mark the ending of the attribute content
                     s++;
                 }
 
                 // Store only well formed attributes
                 ByteSpan attrValue = { beginattrValue, endattrValue };
-                //printf("    VALUE :");
-                //printChunk(attrValue);
 
                 addAttribute(attrName, attrValue);
 
@@ -341,6 +347,16 @@ namespace svg2b2d {
 	//   } while (elem);
     //
     //
+    // Language syntax: https://www.w3.org/TR/REC-xml/
+    // doctypedecl	   ::=   	'<!DOCTYPE' S Name (S ExternalID)? S? ('[' intSubset ']' S?)? '>'
+    // 
+    // DeclSep	       ::=   	PEReference | S
+    // intSubset	   ::=   	(markupdecl | DeclSep)*
+    // markupdecl	   ::=   	elementdecl | AttlistDecl | EntityDecl | NotationDecl | PI | Comment
+    // ExternalID	   ::=   	'SYSTEM' S SystemLiteral
+    // 		                    | 'PUBLIC' S PubidLiteral S SystemLiteral
+    // NDataDecl	   ::=   	S 'NDATA' S Name
+
     struct XmlElementIterator {
     private:
         // XML Iterator States
@@ -404,29 +420,62 @@ namespace svg2b2d {
         }
         
         // readDoctype
-        // BUGBUG - we are only reading the doctype with an internal subset
-        // NOT the external subset
+		// Reads the doctype chunk, and returns it as a ByteSpan
+        // fSource is currently sitting at the beginning of !DOCTYPE
+        // Note: 
+        
         ByteSpan readDoctype()
         {
+
+            // skip past the !DOCTYPE to the first whitespace character
+			while (fSource && !wspChars[*fSource])
+				fSource++;
+            
+			// Skip past the whitespace
+            // to get to the beginning of things
+			fSource = chunk_ltrim(fSource, wspChars);
+
+            
+            // Mark the beginning of the "content" we might return
             ByteSpan elementChunk = fSource;
             elementChunk.fEnd = fSource.fStart;
-            
-            // Read until we see ]>
-			while (fSource && (*fSource != ']'))
-				fSource++;
 
-            if ((*fSource == ']') && (fSource[1] == '>'))
+            // To get to the end, we're looking for '[]' or just '>'
+            auto foundChar = chunk_find_char(fSource, '[');
+            if (foundChar)
             {
-                // We want the closing ']' as part of the element
-                fSource++;
+                fSource = foundChar;
+                foundChar = chunk_find_char(foundChar, ']');
+                if (foundChar)
+                {
+                    fSource = foundChar;
+                    fSource++;
+                }
                 elementChunk.fEnd = fSource.fStart;
-                elementChunk = chunk_rtrim(elementChunk, wspChars);
-
-                // But, skip past the '>' of the tag
+            }
+            
+            // skip whitespace?
+            // search for closing '>'
+            foundChar = chunk_find_char(fSource, '>');
+            if (foundChar)
+            {
+                fSource = foundChar;
+                elementChunk.fEnd = fSource.fStart;
                 fSource++;
             }
-
-			return elementChunk;
+            
+            return elementChunk;
+        }
+        
+        //
+        // CDSect	   ::=   	CDStart CData CDEnd
+        // CDStart	   ::=   	'<![CDATA['
+        // CData	   ::=   	(Char* - (Char* ']]>' Char*))
+        // CDEnd	   ::=   	']]>'
+        //
+        ByteSpan readCDATA()
+        {
+            
         }
         
         // Simple routine to scan XML content
@@ -546,233 +595,4 @@ namespace svg2b2d {
 }
 
 
-namespace ndt_debug {
-	using namespace svg2b2d;
-    
-    std::map<int, std::string> elemTypeNames = {
-     {svg2b2d::XML_ELEMENT_TYPE_INVALID, "INVALID"}
-    ,{svg2b2d::XML_ELEMENT_TYPE_CONTENT, "CONTENT"}
-    ,{svg2b2d::XML_ELEMENT_TYPE_SELF_CLOSING, "SELF_CLOSING"}
-    ,{svg2b2d::XML_ELEMENT_TYPE_START_TAG, "START_TAG"}
-    ,{svg2b2d::XML_ELEMENT_TYPE_END_TAG, "END_TAG"}
-    ,{svg2b2d::XML_ELEMENT_TYPE_COMMENT, "COMMENT"}
-    ,{svg2b2d::XML_ELEMENT_TYPE_PROCESSING_INSTRUCTION, "PROCESSING_INSTRUCTION"}
-    ,{svg2b2d::XML_ELEMENT_TYPE_CDATA, "CDATA"}
-	,{svg2b2d::XML_ELEMENT_TYPE_XMLDECL, "XMLDECL"}
-	,{svg2b2d::XML_ELEMENT_TYPE_DOCTYPE, "DOCTYPE"}
-	};
 
-    void printXmlElement(const svg2b2d::XmlElement& elem)
-    {
-        if (elem.kind() == XML_ELEMENT_TYPE_INVALID)
-            return;
-
-        switch (elem.kind())
-        {
-        case svg2b2d::XML_ELEMENT_TYPE_CONTENT:
-        case svg2b2d::XML_ELEMENT_TYPE_COMMENT:
-        case svg2b2d::XML_ELEMENT_TYPE_PROCESSING_INSTRUCTION:
-            printf("%s: \n", elemTypeNames[elem.kind()].c_str());
-            printChunk(elem.data());
-            break;
-
-        case svg2b2d::XML_ELEMENT_TYPE_START_TAG:
-            printf("START_TAG: [%s]\n", elem.name().c_str());
-            break;
-
-        case svg2b2d::XML_ELEMENT_TYPE_SELF_CLOSING:
-            printf("SELF_CLOSING: [%s]\n", elem.name().c_str());
-            break;
-
-        case svg2b2d::XML_ELEMENT_TYPE_END_TAG:
-            printf("END_TAG: [%s]\n", elem.name().c_str());
-            break;
-
-        default:
-            printf("NYI: %s\n", elemTypeNames[elem.kind()].c_str());
-            printChunk(elem.data());
-            break;
-        }
-
-        for (auto& attr : elem.attributes())
-        {
-            printf("    %s: ", attr.first.c_str());
-            printChunk(attr.second);
-        }
-    }
-}
-
-namespace svg2b2d
-{
-
-    // CSS Syntax
-    // selector {property:value; property:value; ...}
-    // 
-
-    struct CSSSelector
-    {
-        std::string fName{};
-        std::map<std::string, ByteSpan> fProperties{};
-
-        CSSSelector() = default;
-
-        CSSSelector(std::string& name, const ByteSpan& aChunk)
-        {
-            fName = name;
-            loadFromChunk(aChunk);
-        }
-
-        const std::string& name() const { return fName; }
-        const std::map<std::string, ByteSpan>& properties() const { return fProperties; }
-
-
-        explicit operator bool() const { return !fName.empty() && fProperties.size() > 0; }
-
-        void loadFromChunk(const ByteSpan& inChunk)
-        {
-            ByteSpan s = inChunk;
-
-            // get the proper-value combinations, which are separated by ';'
-            // then split each property-value pair into two chunks
-            while (s)
-            {
-                ByteSpan pcombo = chunk_token(s, svg2b2d::charset(";"));
-                ByteSpan pname = chunk_token(pcombo, svg2b2d::charset(":"));
-
-                // Add the property to the map
-                if (pcombo && pname)
-                {
-                    //writeChunk(pname);
-                    //printf(" ==> ");
-                    //printChunk(pcombo);
-
-                    fProperties[std::string(pname.fStart, pname.fEnd)] = pcombo;
-                }
-            }
-        }
-
-        ByteSpan getPropertyValue(std::string name)
-        {
-            auto it = fProperties.find(name);
-            if (it != fProperties.end())
-                return it->second;
-            else
-                return ByteSpan();
-        }
-    };
-
-
-    //
-    // CSSInlineStyleIterator
-    // This iterator is used to iterate over the inline style attributes of an element
-    // Each iteration returns a CSS property/value pair as a std::pair
-    struct CSSInlineStyleIterator {
-        ByteSpan fChunk;
-        ByteSpan fCurrentName{};
-        ByteSpan fCurrentValue{};
-
-        CSSInlineStyleIterator(const ByteSpan& inChunk) : fChunk(inChunk) {}
-
-
-        bool next()
-        {
-            fChunk = chunk_skip_wsp(fChunk);
-            fCurrentName = {};
-            fCurrentValue = {};
-
-            if (fChunk)
-            {
-
-                ByteSpan nextValue = chunk_token(fChunk, svg2b2d::charset(";"));
-                fCurrentName = chunk_trim(chunk_token(nextValue, svg2b2d::charset(":")), wspChars);
-                fCurrentValue = chunk_trim(nextValue, wspChars);
-
-                return (bool)fCurrentName && (bool)fCurrentValue;
-            }
-            else
-                return false;
-        }
-
-
-        CSSInlineStyleIterator& operator++() { next(); return *this; }
-
-        auto operator*() { return std::make_pair(fCurrentName, fCurrentValue); }
-
-        explicit operator bool() const { return fCurrentName && fCurrentValue; }
-    };
-
-
-
-
-    struct CSSSelectorIterator
-    {
-        ByteSpan fSource{};
-        ByteSpan fMark{};
-        CSSSelector fCurrentItem{};
-
-        CSSSelectorIterator(const ByteSpan& inChunk)
-        {
-            fSource = inChunk;
-            fMark = inChunk;
-
-            next();
-        }
-
-        explicit operator bool() const { return (bool)fCurrentItem; }
-
-        bool next()
-        {
-            fSource = chunk_ltrim(fSource, wspChars);
-
-            if (!fSource)
-            {
-                fCurrentItem = CSSSelector();
-                return false;
-            }
-
-            // Look for the next selector, which should be a string
-            // followed by a '{', with optional whitespace in between
-            // terminated with a '}'
-            ByteSpan selectorChunk = chunk_token(fSource, svg2b2d::charset("{"));
-            selectorChunk = chunk_trim(selectorChunk, wspChars);
-
-            if (selectorChunk)
-            {
-                // fSource is positioned right after the opening '{', so we can
-                // look for the closing '}', and then trim the whitespace
-                std::string selectorName(selectorChunk.fStart, selectorChunk.fEnd);
-
-                ByteSpan content = chunk_token(fSource, svg2b2d::charset("}"));
-                if (content)
-                {
-                    fCurrentItem = CSSSelector(selectorName, content);
-
-                    // We found the end of the block, so we have a valid selector
-                    return true;
-                }
-            }
-
-            return false;
-
-        }
-
-        CSSSelector& operator*()
-        {
-            return fCurrentItem;
-        }
-
-        CSSSelectorIterator& operator++()
-        {
-            next();
-            return *this;
-        }
-
-        CSSSelectorIterator& operator++(int)
-        {
-            next();
-            return *this;
-        }
-
-
-    };
-}

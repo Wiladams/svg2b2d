@@ -4,6 +4,7 @@
 #include "svgutils.h"
 #include "svgcolors.h"
 #include "irender.h"
+#include "css.h"
 
 #include <memory>
 #include <vector>
