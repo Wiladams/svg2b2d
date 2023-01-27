@@ -1,18 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
-  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-
-	<svg
-	xmlns="http://www.w3.org/2000/svg"
-	xmlns:xlink="http://www.w3.org/1999/xlink"
-	xmlns:h="https://schemas.waavstudio.com/houses"
-	xmlns:f="https://www.w3schools.com/furniture"
-	>
-	<f:table>
-		<f:name>African Coffee Table</f:name>
-		<f:width>80</f:width>
-		<f:length>120</f:length>
-	</f:table>
-	
-	<use xlink:href="#ControlPoints" x="100" />
+<svg height="200" width="680" xmlns="http://www.w3.org/2000/svg">
+	<circle cx="70" cy="70" r="50" />
+	<circle cx="200" cy="70" r="50" fill="#79C99E" />
+	<circle cx="330" cy="70" r="50" fill="#79C99E" stroke-width="10" stroke="#508484" />
+	<circle cx="460" cy="70" r="50" fill="#79C99E" stroke-width="10" />
+	<circle cx="590" cy="70" r="50" fill="none" stroke-width="10" stroke="#508484" />
 </svg>

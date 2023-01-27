@@ -3,8 +3,8 @@
 
 #include "svgtypes.h"
 #include "base64.h"
-#include "pathbuilder.h"
-#include "pathutil.h"
+#include "parseblpath.h"
+#include "xmlutil.h"
 
 #include <string>
 #include <array>
@@ -504,7 +504,8 @@ namespace svg2b2d {
 			SVGPathBasedShape::loadSelfFromXml(elem);
 			
 			auto d = elem.getAttribute("d");
-			auto success = blPathFromCommands(d, fPath);
+			//auto success = blPathFromCommands(d, fPath);
+			auto success = parsePath(d, fPath);
 		}
 
 		static std::shared_ptr<SVGPath> createFromXml(IMapSVGNodes* iMap, const XmlElement& elem)

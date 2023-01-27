@@ -198,17 +198,17 @@ namespace svg2b2d {
         
     private:
         //
-    // Parse an XML element
-    // We should be sitting on the first character of the element tag after the '<'
-    // There are several things that need to happen here
-    // 1) Scan the element name
-    // 2) Scan the attributes, creating key/value pairs
-    // 3) Figure out if this is a self closing element
+        // Parse an XML element
+        // We should be sitting on the first character of the element tag after the '<'
+        // There are several things that need to happen here
+        // 1) Scan the element name
+        // 2) Scan the attributes, creating key/value pairs
+        // 3) Figure out if this is a self closing element
 
-    // 
-    // We do NOT scan the content of the element here, that happens
-    // outside this routine.  We only deal with what comes up the the closing '>'
-    //
+        // 
+        // We do NOT scan the content of the element here, that happens
+        // outside this routine.  We only deal with what comes up the the closing '>'
+        //
         void setTagName(const ByteSpan& inChunk)
         {
             fXmlName.reset(inChunk);
@@ -251,12 +251,12 @@ namespace svg2b2d {
 
         public:
         //
-// scanAttributes
-// Scans the fData member looking for attribute key/value pairs
-// It will add to the member fAttributes these pairs, without further processing.
-// This should be called after scanTagName(), because we want to be positioned
-// on the first key/value pair. 
-//
+        // scanAttributes
+        // Scans the fData member looking for attribute key/value pairs
+        // It will add to the member fAttributes these pairs, without further processing.
+        // This should be called after scanTagName(), because we want to be positioned
+        // on the first key/value pair. 
+        //
         int scanAttributes()
         {
 
@@ -467,16 +467,6 @@ namespace svg2b2d {
             return elementChunk;
         }
         
-        //
-        // CDSect	   ::=   	CDStart CData CDEnd
-        // CDStart	   ::=   	'<![CDATA['
-        // CData	   ::=   	(Char* - (Char* ']]>' Char*))
-        // CDEnd	   ::=   	']]>'
-        //
-        ByteSpan readCDATA()
-        {
-            
-        }
         
         // Simple routine to scan XML content
         // the input 's' is a chunk representing the xml to 

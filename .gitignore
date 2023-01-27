@@ -22,3 +22,5 @@ projects/.vs/projects/v17/.suo
 *.idb
 *.pdb
 *.exe
+*.iobj
+*.ipdb

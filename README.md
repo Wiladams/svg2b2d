@@ -68,10 +68,12 @@ int main(int argc, char** argv)
 }
 ```
 
-At the moment, the conversion does not right size the BLImage, nor does it scale the graphic to fit the specified size.  That will come in a future update.
+The generated image will be the size of the .svg.
 
-If you want to try the genimage.exe it's like this:
+If you want to try the svg2png.exe it's like this:
 
-genimage.exe filename.svg  fileout.png
+svg2png.exe filename.svg  fileout.png
+
+If you leave off the "fileout.png", it will use 'output.png' as the filename.
 
 And that's it!

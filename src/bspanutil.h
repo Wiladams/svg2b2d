@@ -406,6 +406,28 @@ namespace svg2b2d {
 		return anum;
 	}
 
+	// Consume the next number off the front of the chunk
+// modifying the input chunk to advance past the  number
+// we removed.
+// Return true if we found a number, false otherwise
+	static inline bool parseNextNumber(ByteSpan& s, double& outNumber)
+	{
+		static charset whitespaceChars(",\t\n\f\r ");          // whitespace found in paths
+
+		// clear up leading whitespace, including ','
+		s = chunk_ltrim(s, whitespaceChars);
+
+		ByteSpan numChunk{};
+		s = scanNumber(s, numChunk);
+
+		if (!numChunk)
+			return false;
+
+		outNumber = chunk_to_double(numChunk);
+
+		return true;
+	}
+	
 	static inline int64_t toInteger(const ByteSpan& inChunk)
 	{
 		ByteSpan s = inChunk;

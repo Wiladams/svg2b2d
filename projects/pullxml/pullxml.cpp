@@ -30,11 +30,13 @@ int main(int argc, char** argv)
 
 	// iterate over the elements
 	// printing each one
-    while (iter.next())
+    while (*iter)
     {
         XmlElement elem = *iter;
 
 		ndt_debug::printXmlElement(elem);
+
+        iter.next();
     }
 
     // close the mapped file
