@@ -154,6 +154,7 @@
     <ClInclude Include="..\..\src\bspanutil.h" />
     <ClInclude Include="..\..\src\charset.h" />
     <ClInclude Include="..\..\src\irender.h" />
+    <ClInclude Include="..\..\src\parseblpath.h" />
     <ClInclude Include="..\..\src\svg.h" />
     <ClInclude Include="..\..\src\svgcolors.h" />
     <ClInclude Include="..\..\src\svgshapes.h" />

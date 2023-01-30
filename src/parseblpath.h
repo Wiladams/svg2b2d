@@ -400,7 +400,7 @@ namespace svg2b2d {
 		}
 
 		// Command - s
-		static bool parseSmoothCubyBy(ByteSpan& s, BLPath& apath, int& iteration)
+		static bool parseSmoothCubicBy(ByteSpan& s, BLPath& apath, int& iteration)
 		{
 			double x2{ 0 };
 			double y2{ 0 };
@@ -528,11 +528,11 @@ namespace svg2b2d {
 			{SegmentCommand::CubicTo, parseCubicTo},
 			{SegmentCommand::CubicBy, parseCubicBy},
 			{SegmentCommand::SCubicTo, parseSmoothCubicTo},
-			{SegmentCommand::SCubicBy, parseSmoothCubyBy},
-			{SegmentCommand::QuadTo, parseCubicTo},
-			{SegmentCommand::QuadBy, parseCubicBy},
-			{SegmentCommand::SQuadTo, parseSmoothCubicTo},
-			{SegmentCommand::SQuadBy, parseSmoothCubyBy},
+			{SegmentCommand::SCubicBy, parseSmoothCubicBy},
+			{SegmentCommand::QuadTo, parseQuadTo},
+			{SegmentCommand::QuadBy, parseQuadBy},
+			{SegmentCommand::SQuadTo, parseSmoothQuadTo},
+			{SegmentCommand::SQuadBy, parseSmoothQuadBy},
 			{SegmentCommand::ArcTo, parseArcTo},
 			{SegmentCommand::ArcBy, parseArcBy},
 			{SegmentCommand::CloseTo, parseClose},
